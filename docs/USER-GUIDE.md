@@ -52,7 +52,7 @@ For example, a value of `1` means the default due date is approximately one mont
 #### Grace Period (days)
 Stores the preferred grace period for your lending policy.
 
-> Note: In version 1.1.0, the grace-period setting also controls the **Grace Period** timing label, while penalties are still applied manually from the loan screen. Lend Sure does not automatically add a penalty after the grace period.
+> Note: In version 1.2.0, the grace-period setting controls the **Grace Period** timing label. Penalties remain administrator-controlled and are not automatically charged after the grace period.
 
 #### Penalty Type
 Choose how the default penalty is calculated:
@@ -61,11 +61,21 @@ Choose how the default penalty is calculated:
 - **Fixed amount** — for example, UGX 20,000.
 
 #### Penalty Value
-Enter the percentage or fixed amount used when you click **Apply Default Penalty** on a loan.
+Enter the default percentage or fixed amount. In version 1.2.0 this is used as the starting penalty when creating a new loan; each loan stores its own agreed penalty terms.
 
-### Acknowledgement / Lender Details
+### Acknowledgement Header / Company
 
-These details appear on the printable Loan Acknowledgement & Acceptance document:
+These fields create a proper document header for the Loan Acknowledgement & Acceptance:
+
+- Company / Business Name
+- Company Details — for example registration information, email, website, or address
+- Company Logo
+
+A compact horizontal or square logo works best.
+
+### Lender / Signatory Details
+
+These details identify the lender/signatory on the acknowledgement:
 
 - Lender Name
 - Lender Phone
@@ -175,11 +185,13 @@ Click **Open** on a loan to manage it.
 3. Select a borrower.
 4. Enter the principal amount.
 5. Confirm or change the monthly interest rate.
-6. Confirm the start date.
-7. Confirm the due date.
-8. Enter the loan purpose if required.
-9. Add any additional terms that should appear on the acknowledgement.
-10. Click **Create Loan & Generate Acknowledgement**.
+6. Confirm the **Late Penalty Type**.
+7. Confirm or change the **Late Penalty Value**.
+8. Confirm the start date.
+9. Confirm the due date.
+10. Enter the loan purpose if required.
+11. Add any additional terms that should appear on the acknowledgement.
+12. Click **Create Loan & Generate Acknowledgement**.
 
 ### Loan Fields
 
@@ -191,6 +203,12 @@ The original amount being lent before interest.
 
 #### Monthly Interest (%)
 The interest rate applied to the loan. The default is 20%.
+
+#### Late Penalty Type
+Choose whether this particular loan uses a percentage of outstanding principal or a fixed late-payment amount.
+
+#### Late Penalty Value
+The agreed penalty amount/rate for this loan. It is stored with the loan and printed in the acknowledgement terms.
 
 #### Start Date
 The date the loan begins.
@@ -248,21 +266,22 @@ The projected next-month interest is therefore UGX 160,000.
 
 Every loan includes a Loan Acknowledgement section.
 
-The acknowledgement is intended to create a printable record of the original loan terms for signing.
+The acknowledgement is intended to create a branded PDF record of the original loan terms for signing. It can include your company/business name, logo, company details, lender details, interest, due date, agreed penalty, and additional terms.
 
 ### Creating and Signing the Acknowledgement
 
 1. Create the loan.
 2. Open the loan record.
 3. Find **Loan Acknowledgement**.
-4. Click **View / Print Acknowledgement**.
-5. Review the document before printing.
-6. Print the acknowledgement.
-7. Have the borrower, lender, and witness complete the required signature areas.
-8. Scan the signed document or take a clear photograph.
-9. Return to the same loan record.
-10. Choose the signed file.
-11. Click **Upload Signed Copy**.
+4. Click **Save Acknowledgement PDF**.
+5. Review the document.
+6. Click the single **Save PDF** action.
+7. In the browser dialog choose **Save as PDF**. Printing is still available from that same browser dialog if you need a paper copy.
+8. Have the borrower, lender, and witness complete the required signature areas.
+9. Scan the signed document or take a clear photograph.
+10. Return to the same loan record.
+11. Choose the signed file.
+12. Click **Upload Signed Copy**.
 
 Accepted file types are:
 
@@ -421,14 +440,15 @@ If the administrator extends a loan by more than one month, the plugin calculate
 
 Open the loan and find **Apply Penalty**.
 
-The screen displays the default penalty configured under **Lend Sure → Settings**.
+The screen starts with the **penalty terms agreed for that specific loan**. The type and value are editable before applying the charge, which allows an intentional one-off adjustment without changing the original acknowledgement terms.
 
 ### Steps
 
 1. Open the loan.
-2. Confirm the configured penalty shown on screen.
-3. Edit the note if necessary.
-4. Click **Apply Default Penalty**.
+2. Review the agreed penalty type/value shown on screen.
+3. If necessary, edit the type or value for this one penalty application.
+4. Edit the note if necessary.
+5. Click **Apply Penalty**.
 
 The penalty is added to **Penalty Due** and recorded in Transaction History.
 
@@ -447,9 +467,9 @@ Example:
 If configured as fixed:
 
 - Penalty value: UGX 20,000
-- Each time the administrator applies the default penalty, UGX 20,000 is added.
+- Each time the administrator applies that fixed penalty, UGX 20,000 is added unless the value is intentionally edited before applying it.
 
-> Important: Version 1.1.0 does not automatically apply penalties. The administrator decides when a penalty should be applied.
+> Important: Version 1.2.0 does not automatically apply penalties. The administrator decides when a penalty should be applied. The transaction record stores the applied penalty type/value.
 
 ---
 
@@ -535,7 +555,7 @@ A simple routine for using Lend Sure is:
 3. Open the relevant loan.
 4. Record payment if received.
 5. If an extension is agreed, use **Extend Loan**.
-6. If your lending terms permit a penalty, use **Apply Default Penalty**.
+6. If your lending terms permit a penalty, review the agreed values and use **Apply Penalty**.
 
 ### Periodically
 
@@ -650,7 +670,7 @@ Open **Lend Sure → Settings** and confirm **Default Monthly Interest (%)** is 
 Open the loan and use **Replace Signed Copy**.
 
 ### A loan is overdue but no penalty was added
-This is expected in version 1.1.0. Timing labels are automatic, but penalties are still applied manually from the individual loan screen.
+This is expected in version 1.2.0. Timing labels are automatic, but penalties are still applied manually from the individual loan screen using the loan-specific agreed penalty as the starting value.
 
 ### Why did a partial payment reduce interest before principal?
 Payments intentionally follow the order **Interest → Penalty → Principal**.
@@ -665,7 +685,7 @@ If **Capitalize unpaid interest and penalty into the new principal** was enabled
 
 ## 20. Reminders and Due-Date Workflow
 
-Lend Sure 1.1.0 adds a dedicated follow-up workflow so you do not have to manually remember which borrowers need attention.
+Lend Sure retains the v1.1.0 dedicated follow-up workflow so you do not have to manually remember which borrowers need attention.
 
 ### Timing Labels
 
@@ -704,7 +724,7 @@ You can send a reminder from either the **Reminders** screen or the individual l
 4. The message includes the current amount due, due date and timing status.
 5. The attempt is added to **Recent Reminder Activity** as sent or failed.
 
-The reminder does not change the loan, charge a penalty or extend the due date.
+The reminder does not change the loan, charge a penalty or extend the due date. When the borrower reminder is sent, version 1.2.0 also sends a copy to the configured lender/admin digest email when that address is valid and different from the borrower email.
 
 ### Daily Admin Due-Date Digest
 
@@ -731,11 +751,11 @@ Lend Sure uses WP-Cron only to trigger the reminder digest. Loan balances and du
 7. If you agree to an extension, use **Extend Loan** rather than manually changing the balance.
 8. Apply penalties only according to your agreed terms and applicable rules.
 
-## 21. Version 1.1.0 Notes
+## 21. Version 1.2.0 Notes
 
-The current release keeps the financial workflow administrator-controlled. The following are not automated in version 1.1.0:
+Version 1.2.0 adds branded acknowledgement headers, per-loan penalty terms, editable penalty application, and the Save PDF acknowledgement workflow. The financial workflow remains administrator-controlled. The following are not automated in version 1.2.0:
 
-- Automatic SMS/WhatsApp reminders
+- Automatic SMS/WhatsApp reminders (email reminders remain available)
 - Automatic penalty application
 - Automatic borrower reminder emails (borrower emails are sent manually by the administrator)
 - Borrower self-service portal

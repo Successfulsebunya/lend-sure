@@ -1,136 +1,163 @@
 # Lend Sure
 
-Lend Sure is a lightweight private loan-management plugin for WordPress. It is designed for administrators who lend money and need a clear record of borrowers, loan balances, monthly interest, partial payments, loan extensions, penalties, signed acknowledgements, and transaction history without running a separate application.
+**Lend Sure** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, signed acknowledgements, due dates, reminders, and transaction history from the WordPress dashboard.
 
-## Key Features
+- **Version:** 1.2.0
+- **Default interest:** 20% per month, configurable
+- **WordPress:** 6.4+
+- **PHP:** 7.4+
+- **Plugin URI:** https://github.com/Successfulsebunya/lend-sure
+- **Author:** Moses Cursor
+- **Author URI:** https://mosescursor.com/
+- **License:** GPL-2.0-or-later
 
-- Default **20% monthly interest**, configurable per loan and in Settings.
+## Features
+
 - Borrower records with contact and identification details.
 - Loan creation with automatic first-month interest.
+- Configurable monthly interest per loan.
+- Per-loan late penalty terms: fixed amount or percentage of outstanding principal.
+- Editable one-off penalty application while retaining the agreed penalty on the loan record.
 - Partial payment allocation: **Interest → Penalty → Principal**.
-- Projected next-month interest based on the remaining principal.
-- Loan extensions with optional capitalization of unpaid interest and penalties.
-- Fixed or percentage penalties.
-- Printable Loan Acknowledgement & Acceptance document.
-- Upload and retain signed acknowledgement copies as PDF, JPG, JPEG, or PNG.
-- Full payment and transaction history.
-- Dashboard for active, due-today, due-this-week, grace-period, and overdue loans.
-- Dedicated Reminders module with a daily follow-up queue.
-- Manual borrower email reminders from the loan record or Reminders screen.
-- Optional daily admin due-date digest using `wp_mail()` and WP-Cron.
-- Reminder activity log for sent/failed reminder attempts.
-- CSV export of the loan register.
-- Dedicated custom database tables for loan data.
-
-## Requirements
-
-- WordPress 6.4 or later
-- PHP 7.4 or later
-- Administrator access to WordPress
+- Loan extensions with optional capitalization.
+- Custom acknowledgement header with **company name, logo, and company details**.
+- Branded Loan Acknowledgement & Acceptance containing interest, due date, and agreed penalty terms.
+- Single **Save PDF** acknowledgement workflow using the browser's native PDF output.
+- Upload signed acknowledgement copies back to each loan.
+- Due Today, Due This Week, Grace Period, Overdue, and Upcoming statuses.
+- Manual borrower email reminders with a lender/admin copy.
+- Optional daily admin/lender due-date digest through `wp_mail()` and WP-Cron.
+- Reminder activity logging.
+- Payment and transaction history.
+- CSV export.
+- Dedicated database tables rather than custom posts.
 
 ## Installation
 
-1. Download the plugin ZIP.
-2. In WordPress, go to **Plugins → Add New → Upload Plugin**.
-3. Choose the Lend Sure ZIP file and click **Install Now**.
-4. Activate **Lend Sure**.
-5. Open **Lend Sure → Settings** and configure your loan defaults and lender details.
-6. Add a borrower before creating the first loan.
+1. Download the release ZIP.
+2. In WordPress, open **Plugins → Add New → Upload Plugin**.
+3. Upload and activate Lend Sure.
+4. Open **Lend Sure → Settings**.
+5. Configure loan defaults, company acknowledgement header, lender/signatory details, and reminder settings.
+6. Add a borrower and create the first loan.
 
-## Recommended First-Time Setup
+## Recommended Settings
 
-Go to **Lend Sure → Settings** and confirm:
+For the current lending workflow:
 
 - Currency: `UGX`
-- Default Monthly Interest: `20%`
-- Default Duration: `1 month`
-- Grace Period: your preferred number of days
-- Penalty Type: percentage or fixed amount
-- Penalty Value
-- Lender name, phone, and address
+- Default monthly interest: `20%`
+- Default duration: `1 month`
+- Grace period: your preferred number of days
+- Default penalty: percentage or fixed amount
+- Company/business name, logo, and header details
+- Lender/signatory name, phone, and address
 
-## Documentation
+Defaults are only starting values. Interest and penalty terms can be set on each new loan.
 
-See the full administrator guide:
+## Loan Calculation Example
 
-- [Administrator User Guide](docs/USER-GUIDE.md)
-
-## Loan Calculation Model
-
-For a loan of **UGX 1,000,000 at 20% monthly interest**:
+For **UGX 1,000,000 at 20% monthly interest**:
 
 - Principal: UGX 1,000,000
 - First-month interest: UGX 200,000
-- Initial total due: UGX 1,200,000
+- Initial amount due: UGX 1,200,000
 
 If the borrower pays UGX 400,000:
 
-1. UGX 200,000 clears accrued interest.
-2. The remaining UGX 200,000 reduces principal.
-3. New principal becomes UGX 800,000.
-4. Projected next-month interest at 20% becomes UGX 160,000.
+1. UGX 200,000 clears interest.
+2. UGX 200,000 reduces principal.
+3. New principal: UGX 800,000.
+4. Projected next-month interest at 20%: UGX 160,000.
 
-## Payment Allocation
+## Penalty Terms in v1.2.0
 
-Payments are allocated in this order:
+Each loan stores its own:
 
-1. Accrued interest
-2. Accrued penalty
-3. Principal
+- penalty type (`percentage` or `fixed`), and
+- penalty value.
 
-This allocation is recorded in the payment history for auditability.
+These are captured when the loan is created and displayed in the acknowledgement. When an administrator applies a penalty, the agreed values are prefilled but may be intentionally adjusted for a one-off charge. The actual applied type/value is retained in transaction metadata.
 
-## Loan Extensions
+## Loan Acknowledgements
 
-When extending a loan, the administrator selects the number of months and may choose to capitalize outstanding interest and penalties into the new principal. New extension-period interest is then calculated using the loan's interest rate.
+Version 1.2.0 adds a proper business header to the acknowledgement. Under **Lend Sure → Settings**, you can configure:
 
-## Signed Loan Acknowledgements
+- Company / Business Name
+- Company Logo
+- Company Details
+- Lender / Signatory Name
+- Phone
+- Address
 
-Each loan has a printable acknowledgement document. The recommended workflow is:
+The acknowledgement contains the original principal, monthly interest, agreed late penalty, original due date, additional terms, signatures, witness area, and optional thumbprint.
 
-1. Create the loan.
-2. Open the loan.
-3. Select **View / Print Acknowledgement**.
-4. Print and obtain the required signatures.
-5. Scan or photograph the signed document.
-6. Upload it back to the same loan record.
+### PDF workflow
 
-The signed document remains associated with that loan for record keeping.
+1. Open a loan.
+2. Click **Save Acknowledgement PDF**.
+3. Click the single **Save PDF** action.
+4. Choose **Save as PDF** in the browser destination dialog.
+5. Obtain signatures as required.
+6. Upload the signed PDF/image back to the same loan record.
 
+This keeps the plugin lightweight by avoiding a large bundled PDF-rendering library.
 
-## Due-Date & Reminder Workflow
+## Reminders
 
-Lend Sure 1.1.0 classifies active loans as **Due Today**, **Due This Week**, **Grace Period**, **Overdue**, or **Upcoming**. The grace-period status uses the number of grace days configured in Settings.
+Version 1.2.0 retains the v1.1.0 reminder workflow:
 
-The **Lend Sure → Reminders** screen gives the administrator a focused follow-up list and allows a borrower email reminder to be sent when the borrower has a valid email address.
+- borrower reminders are sent manually via WordPress `wp_mail()` and a lender/admin copy is sent to the configured digest email;
+- an optional daily lender/admin digest is scheduled using WP-Cron;
+- reminder attempts are logged.
 
-An optional daily admin digest can also be enabled under **Lend Sure → Settings → Due-Date Reminders**. The digest is sent through WordPress `wp_mail()`. Because WP-Cron is traffic-driven, delivery is daily but not guaranteed at an exact clock time.
+SMS is not built into v1.2.0 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
 
-## Security and Access
+## Documentation
 
-Lend Sure's administration screens require WordPress administrator-level `manage_options` capability. Forms use WordPress nonces and sanitization routines.
+See [docs/USER-GUIDE.md](docs/USER-GUIDE.md) for the complete administrator guide.
 
-Because borrower records may contain personal information, administrators should also secure the WordPress site, maintain backups, restrict administrator accounts, and follow applicable privacy requirements.
+## Development
+
+The repository contains the plugin source directly at the repository root so it can be managed easily with GitHub Desktop or Git.
+
+### PHP syntax check
+
+```bash
+find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+```
+
+## Security and Privacy
+
+Lend Sure administration screens require the WordPress `manage_options` capability. Actions use WordPress nonces and input sanitization. Signed acknowledgement files are stored through the WordPress Media Library.
+
+Loan records may contain personal and financial information. Secure the WordPress installation, restrict administrator accounts, maintain backups, and follow applicable data-protection requirements.
 
 ## Legal Notice
 
-Lend Sure is an administrative record-keeping tool, not legal or financial advice. Before relying on acknowledgement wording, interest rates, penalties, or lending practices as legally enforceable terms, review the laws and regulations that apply in your jurisdiction.
-
-## License
-
-GPL-2.0-or-later.
+Lend Sure is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
 
 ## Changelog
+
+### 1.2.0
+
+- Added company name, logo, and company details to acknowledgement settings/header.
+- Added per-loan penalty type/value.
+- Added agreed penalty terms to acknowledgement documents.
+- Made penalty application values editable.
+- Changed the primary acknowledgement action to Save PDF.
+- Added GitHub Plugin URI and mosescursor.com Author URI.
+- Manual borrower reminder emails now send a lender/admin copy where configured.
+- Updated WordPress-style `readme.txt` and administrator documentation.
 
 ### 1.1.0
 
 - Added due-date workflow statuses.
 - Added Reminders module.
-- Added manual borrower email reminders.
-- Added daily admin due-date digest.
+- Added borrower email reminders.
+- Added daily admin digest.
 - Added reminder activity logging.
-- Added reminder settings and dashboard cards.
 
 ### 1.0.0
 
-- Initial Lend Sure release.
+- Initial release.

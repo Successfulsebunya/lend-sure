@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class LendSure_DB {
-    const DB_VERSION = '1.1.0';
+    const DB_VERSION = '1.2.0';
 
     public static function table( $name ) {
         global $wpdb;
@@ -12,14 +12,31 @@ class LendSure_DB {
     }
 
     public static function activate() {
+        $previous_version = get_option( 'lendsure_db_version', '' );
         self::create_tables();
         self::seed_options();
+        self::migrate( $previous_version );
         update_option( 'lendsure_db_version', self::DB_VERSION );
     }
 
     public static function maybe_upgrade() {
         if ( get_option( 'lendsure_db_version' ) !== self::DB_VERSION ) {
             self::activate();
+        }
+    }
+
+    private static function migrate( $previous_version ) {
+        if ( $previous_version && version_compare( $previous_version, '1.2.0', '<' ) ) {
+            global $wpdb;
+            $type = 'fixed' === get_option( 'lendsure_penalty_type', 'percentage' ) ? 'fixed' : 'percentage';
+            $value = max( 0, (float) get_option( 'lendsure_penalty_value', 5 ) );
+            $wpdb->query(
+                $wpdb->prepare(
+                    'UPDATE ' . self::table( 'loans' ) . ' SET penalty_type = %s, penalty_value = %f',
+                    $type,
+                    $value
+                )
+            );
         }
     }
 
@@ -33,6 +50,9 @@ class LendSure_DB {
         add_option( 'lendsure_lender_name', get_bloginfo( 'name' ) );
         add_option( 'lendsure_lender_phone', '' );
         add_option( 'lendsure_lender_address', '' );
+        add_option( 'lendsure_company_name', get_bloginfo( 'name' ) );
+        add_option( 'lendsure_company_details', '' );
+        add_option( 'lendsure_company_logo_id', '0' );
         add_option( 'lendsure_reminders_enabled', '1' );
         add_option( 'lendsure_reminder_email', get_option( 'admin_email' ) );
         add_option( 'lendsure_reminder_days_before', '3' );
@@ -73,6 +93,8 @@ class LendSure_DB {
             interest_rate decimal(8,4) NOT NULL DEFAULT 20,
             accrued_interest decimal(20,2) NOT NULL DEFAULT 0,
             accrued_penalty decimal(20,2) NOT NULL DEFAULT 0,
+            penalty_type varchar(20) NOT NULL DEFAULT 'percentage',
+            penalty_value decimal(20,4) NOT NULL DEFAULT 5,
             start_date date NOT NULL,
             due_date date NOT NULL,
             status varchar(30) NOT NULL DEFAULT 'active',

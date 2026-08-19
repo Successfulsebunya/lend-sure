@@ -168,7 +168,29 @@ class LendSure_Reminders {
         $sent = wp_mail( $loan->email, $subject, $message );
         $this->log( $loan_id, 'borrower_email', $loan->email, $sent ? 'sent' : 'failed', $message );
 
-        $notice = $sent ? __( 'Borrower reminder email sent.', 'lend-sure' ) : __( 'WordPress could not send the borrower reminder email.', 'lend-sure' );
+        $lender_email = sanitize_email( get_option( 'lendsure_reminder_email', get_option( 'admin_email' ) ) );
+        $copy_sent = true;
+        if ( is_email( $lender_email ) && strtolower( $lender_email ) !== strtolower( $loan->email ) ) {
+            $copy_subject = sprintf( __( 'Copy: loan reminder sent to %s', 'lend-sure' ), $loan->full_name );
+            $copy_message = sprintf(
+                __( "A loan reminder was sent to %1$s (%2$s).
+
+%3$s", 'lend-sure' ),
+                $loan->full_name,
+                $loan->email,
+                $message
+            );
+            $copy_sent = wp_mail( $lender_email, $copy_subject, $copy_message );
+            $this->log( $loan_id, 'lender_copy_email', $lender_email, $copy_sent ? 'sent' : 'failed', $copy_message );
+        }
+
+        if ( $sent && $copy_sent ) {
+            $notice = __( 'Reminder email sent to the borrower and a lender/admin copy was sent where configured.', 'lend-sure' );
+        } elseif ( $sent ) {
+            $notice = __( 'Borrower reminder email sent, but the lender/admin copy could not be sent.', 'lend-sure' );
+        } else {
+            $notice = __( 'WordPress could not send the borrower reminder email.', 'lend-sure' );
+        }
         $url = add_query_arg(
             array( 'page' => 'lendsure-loans', 'action' => 'view', 'loan_id' => $loan_id, 'ls_notice' => $notice ),
             admin_url( 'admin.php' )

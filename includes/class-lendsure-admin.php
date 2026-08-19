@@ -301,6 +301,8 @@ class LendSure_Admin {
         global $wpdb;
         $borrowers = $wpdb->get_results( 'SELECT id, full_name, phone FROM ' . LendSure_DB::table( 'borrowers' ) . ' ORDER BY full_name ASC' );
         $rate = (float) get_option( 'lendsure_default_interest', 20 );
+        $penalty_type = get_option( 'lendsure_penalty_type', 'percentage' );
+        $penalty_value = (float) get_option( 'lendsure_penalty_value', 5 );
         $months = max( 1, absint( get_option( 'lendsure_default_duration_months', 1 ) ) );
         $start = $this->today();
         $due = $this->add_months( $start, $months );
@@ -322,6 +324,9 @@ class LendSure_Admin {
                 </label></p>
                 <p><label><?php esc_html_e( 'Principal Amount', 'lend-sure' ); ?><input required min="1" step="0.01" name="principal" type="number"></label></p>
                 <p><label><?php esc_html_e( 'Monthly Interest (%)', 'lend-sure' ); ?><input required min="0" step="0.01" name="interest_rate" type="number" value="<?php echo esc_attr( $rate ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Late Penalty Type', 'lend-sure' ); ?><select name="penalty_type"><option value="percentage" <?php selected( $penalty_type, 'percentage' ); ?>><?php esc_html_e( 'Percentage of outstanding principal', 'lend-sure' ); ?></option><option value="fixed" <?php selected( $penalty_type, 'fixed' ); ?>><?php esc_html_e( 'Fixed amount', 'lend-sure' ); ?></option></select></label></p>
+                <p><label><?php esc_html_e( 'Late Penalty Value', 'lend-sure' ); ?><input required min="0" step="0.01" name="penalty_value" type="number" value="<?php echo esc_attr( $penalty_value ); ?>"></label></p>
+                <p class="description"><?php esc_html_e( 'This is the agreed late-payment penalty for this loan and will appear in the acknowledgement terms. You can still edit the amount when applying a penalty.', 'lend-sure' ); ?></p>
                 <p><label><?php esc_html_e( 'Start Date', 'lend-sure' ); ?><input required name="start_date" type="date" value="<?php echo esc_attr( $start ); ?>"></label></p>
                 <p><label><?php esc_html_e( 'Due Date', 'lend-sure' ); ?><input required name="due_date" type="date" value="<?php echo esc_attr( $due ); ?>"></label></p>
                 <p><label><?php esc_html_e( 'Purpose', 'lend-sure' ); ?><textarea name="purpose" rows="2" class="large-text"></textarea></label></p>
@@ -364,6 +369,7 @@ class LendSure_Admin {
                     <p><strong><?php esc_html_e( 'Phone:', 'lend-sure' ); ?></strong> <?php echo esc_html( $loan->phone ); ?></p>
                     <p><strong><?php esc_html_e( 'Original principal:', 'lend-sure' ); ?></strong> <?php echo $this->money( $loan->original_principal ); ?></p>
                     <p><strong><?php esc_html_e( 'Interest:', 'lend-sure' ); ?></strong> <?php echo esc_html( number_format_i18n( $loan->interest_rate, 2 ) . '% / month' ); ?></p>
+                    <p><strong><?php esc_html_e( 'Agreed late penalty:', 'lend-sure' ); ?></strong> <?php echo esc_html( 'fixed' === $loan->penalty_type ? get_option( 'lendsure_currency', 'UGX' ) . ' ' . number_format_i18n( $loan->penalty_value, 0 ) : number_format_i18n( $loan->penalty_value, 2 ) . '% of outstanding principal' ); ?></p>
                     <p><strong><?php esc_html_e( 'Projected next-month interest:', 'lend-sure' ); ?></strong> <?php echo $this->money( LendSure_Calculator::interest( $loan->current_principal, $loan->interest_rate ) ); ?></p>
                     <p><strong><?php esc_html_e( 'Start:', 'lend-sure' ); ?></strong> <?php echo esc_html( $loan->start_date ); ?></p>
                     <p><strong><?php esc_html_e( 'Due:', 'lend-sure' ); ?></strong> <?php echo esc_html( $loan->due_date ); ?></p>
@@ -372,8 +378,8 @@ class LendSure_Admin {
 
                 <section class="ls-panel">
                     <h2><?php esc_html_e( 'Loan Acknowledgement', 'lend-sure' ); ?></h2>
-                    <p><?php esc_html_e( 'Generate the acknowledgement, print it for signatures, then upload the signed copy back to this loan.', 'lend-sure' ); ?></p>
-                    <p><a class="button button-primary" target="_blank" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=lendsure_acknowledgement&loan_id=' . (int) $loan->id ), 'lendsure_acknowledgement_' . $loan->id ) ); ?>"><?php esc_html_e( 'View / Print Acknowledgement', 'lend-sure' ); ?></a></p>
+                    <p><?php esc_html_e( 'Open the acknowledgement and use the single Save PDF action to store a clean PDF copy. You can print that PDF later if a paper signature is required.', 'lend-sure' ); ?></p>
+                    <p><a class="button button-primary" target="_blank" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=lendsure_acknowledgement&loan_id=' . (int) $loan->id ), 'lendsure_acknowledgement_' . $loan->id ) ); ?>"><?php esc_html_e( 'Save Acknowledgement PDF', 'lend-sure' ); ?></a></p>
                     <?php if ( $ack_url ) : ?>
                         <p><strong><?php esc_html_e( 'Signed copy:', 'lend-sure' ); ?></strong> <a target="_blank" href="<?php echo esc_url( $ack_url ); ?>"><?php esc_html_e( 'Open uploaded document', 'lend-sure' ); ?></a></p>
                     <?php endif; ?>
@@ -429,12 +435,14 @@ class LendSure_Admin {
 
                 <section class="ls-panel">
                     <h2><?php esc_html_e( 'Apply Penalty', 'lend-sure' ); ?></h2>
-                    <p><?php echo esc_html( sprintf( __( 'Default: %1$s %2$s', 'lend-sure' ), get_option( 'lendsure_penalty_value', 5 ), 'fixed' === get_option( 'lendsure_penalty_type', 'percentage' ) ? get_option( 'lendsure_currency', 'UGX' ) : '%' ) ); ?></p>
+                    <p class="description"><?php esc_html_e( 'The fields start with the penalty agreed when the loan was created. Edit them here only when you intentionally need a different one-off charge.', 'lend-sure' ); ?></p>
                     <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                         <input type="hidden" name="action" value="lendsure_apply_penalty"><input type="hidden" name="loan_id" value="<?php echo esc_attr( $loan->id ); ?>">
                         <?php wp_nonce_field( 'lendsure_apply_penalty_' . $loan->id ); ?>
+                        <p><label><?php esc_html_e( 'Penalty Type', 'lend-sure' ); ?><select name="penalty_type"><option value="percentage" <?php selected( $loan->penalty_type, 'percentage' ); ?>><?php esc_html_e( 'Percentage of outstanding principal', 'lend-sure' ); ?></option><option value="fixed" <?php selected( $loan->penalty_type, 'fixed' ); ?>><?php esc_html_e( 'Fixed amount', 'lend-sure' ); ?></option></select></label></p>
+                        <p><label><?php esc_html_e( 'Penalty Value', 'lend-sure' ); ?><input required min="0" step="0.01" type="number" name="penalty_value" value="<?php echo esc_attr( $loan->penalty_value ); ?>"></label></p>
                         <p><label><?php esc_html_e( 'Note', 'lend-sure' ); ?><input type="text" name="note" value="Late payment penalty"></label></p>
-                        <?php submit_button( __( 'Apply Default Penalty', 'lend-sure' ), 'secondary', 'submit', false ); ?>
+                        <?php submit_button( __( 'Apply Penalty', 'lend-sure' ), 'secondary', 'submit', false ); ?>
                     </form>
                 </section>
             </div>
@@ -528,7 +536,7 @@ class LendSure_Admin {
         <div class="wrap lendsure-wrap">
             <h1><?php esc_html_e( 'Lend Sure Settings', 'lend-sure' ); ?></h1>
             <?php $this->notice(); ?>
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ls-form-card">
+            <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ls-form-card">
                 <input type="hidden" name="action" value="lendsure_save_settings">
                 <?php wp_nonce_field( 'lendsure_save_settings' ); ?>
                 <h2><?php esc_html_e( 'Loan Defaults', 'lend-sure' ); ?></h2>
@@ -539,7 +547,16 @@ class LendSure_Admin {
                 <p><label><?php esc_html_e( 'Penalty Type', 'lend-sure' ); ?><select name="penalty_type"><option value="percentage" <?php selected( get_option( 'lendsure_penalty_type', 'percentage' ), 'percentage' ); ?>><?php esc_html_e( 'Percentage of outstanding principal', 'lend-sure' ); ?></option><option value="fixed" <?php selected( get_option( 'lendsure_penalty_type', 'percentage' ), 'fixed' ); ?>><?php esc_html_e( 'Fixed amount', 'lend-sure' ); ?></option></select></label></p>
                 <p><label><?php esc_html_e( 'Penalty Value', 'lend-sure' ); ?><input name="penalty_value" min="0" step="0.01" type="number" value="<?php echo esc_attr( get_option( 'lendsure_penalty_value', 5 ) ); ?>"></label></p>
 
-                <h2><?php esc_html_e( 'Acknowledgement / Lender Details', 'lend-sure' ); ?></h2>
+                <h2><?php esc_html_e( 'Acknowledgement Header / Company', 'lend-sure' ); ?></h2>
+                <p><label><?php esc_html_e( 'Company / Business Name', 'lend-sure' ); ?><input name="company_name" type="text" class="regular-text" value="<?php echo esc_attr( get_option( 'lendsure_company_name', get_bloginfo( 'name' ) ) ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Company Details', 'lend-sure' ); ?><textarea name="company_details" rows="4" class="large-text" placeholder="Registration details, email, website, address or other header information."><?php echo esc_textarea( get_option( 'lendsure_company_details', '' ) ); ?></textarea></label></p>
+                <?php $company_logo_id = absint( get_option( 'lendsure_company_logo_id', 0 ) ); $company_logo_url = $company_logo_id ? wp_get_attachment_image_url( $company_logo_id, 'medium' ) : ''; ?>
+                <?php if ( $company_logo_url ) : ?><p><img class="ls-company-logo-preview" src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Current company logo', 'lend-sure' ); ?>"></p><?php endif; ?>
+                <p><label><?php esc_html_e( 'Company Logo', 'lend-sure' ); ?><input name="company_logo" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label></p>
+                <?php if ( $company_logo_id ) : ?><p><label class="ls-check-label"><input name="remove_company_logo" type="checkbox" value="1"> <?php esc_html_e( 'Remove current company logo', 'lend-sure' ); ?></label></p><?php endif; ?>
+                <p class="description"><?php esc_html_e( 'These details form the acknowledgement document header. A compact horizontal or square logo works best.', 'lend-sure' ); ?></p>
+
+                <h2><?php esc_html_e( 'Lender / Signatory Details', 'lend-sure' ); ?></h2>
                 <p><label><?php esc_html_e( 'Lender Name', 'lend-sure' ); ?><input name="lender_name" type="text" class="regular-text" value="<?php echo esc_attr( get_option( 'lendsure_lender_name', '' ) ); ?>"></label></p>
                 <p><label><?php esc_html_e( 'Lender Phone', 'lend-sure' ); ?><input name="lender_phone" type="text" class="regular-text" value="<?php echo esc_attr( get_option( 'lendsure_lender_phone', '' ) ); ?>"></label></p>
                 <p><label><?php esc_html_e( 'Lender Address', 'lend-sure' ); ?><textarea name="lender_address" rows="3" class="large-text"><?php echo esc_textarea( get_option( 'lendsure_lender_address', '' ) ); ?></textarea></label></p>
@@ -585,6 +602,8 @@ class LendSure_Admin {
         $borrower_id = absint( $_POST['borrower_id'] ?? 0 );
         $principal = max( 0, (float) ( $_POST['principal'] ?? 0 ) );
         $rate = max( 0, (float) ( $_POST['interest_rate'] ?? get_option( 'lendsure_default_interest', 20 ) ) );
+        $penalty_type = 'fixed' === ( $_POST['penalty_type'] ?? '' ) ? 'fixed' : 'percentage';
+        $penalty_value = max( 0, (float) ( $_POST['penalty_value'] ?? get_option( 'lendsure_penalty_value', 5 ) ) );
         $start = sanitize_text_field( wp_unslash( $_POST['start_date'] ?? '' ) );
         $due = sanitize_text_field( wp_unslash( $_POST['due_date'] ?? '' ) );
 
@@ -608,6 +627,8 @@ class LendSure_Admin {
                 'interest_rate'     => $rate,
                 'accrued_interest'  => $interest,
                 'accrued_penalty'   => 0,
+                'penalty_type'      => $penalty_type,
+                'penalty_value'     => $penalty_value,
                 'start_date'        => $start,
                 'due_date'          => $due,
                 'status'            => 'active',
@@ -616,12 +637,12 @@ class LendSure_Admin {
                 'created_at'        => $now,
                 'updated_at'        => $now,
             ),
-            array( '%d', '%f', '%f', '%s', '%f', '%f', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+            array( '%d', '%f', '%f', '%s', '%f', '%f', '%f', '%f', '%s', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
         );
         $loan_id = (int) $wpdb->insert_id;
         $this->add_transaction( $loan_id, 'loan_issued', $principal, $start, __( 'Loan principal issued.', 'lend-sure' ) );
         $this->add_transaction( $loan_id, 'interest_charged', $interest, $start, sprintf( __( 'Initial monthly interest at %s%%.', 'lend-sure' ), $rate ) );
-        $this->redirect( 'lendsure-loans', array( 'action' => 'view', 'loan_id' => $loan_id, 'ls_notice' => __( 'Loan created. The acknowledgement is ready to print.', 'lend-sure' ) ) );
+        $this->redirect( 'lendsure-loans', array( 'action' => 'view', 'loan_id' => $loan_id, 'ls_notice' => __( 'Loan created. The acknowledgement is ready to save as PDF.', 'lend-sure' ) ) );
     }
 
     public function add_payment() {
@@ -741,11 +762,11 @@ class LendSure_Admin {
         if ( ! $loan || 'paid' === $loan->status ) {
             wp_die( esc_html__( 'Penalty cannot be applied.', 'lend-sure' ) );
         }
-        $type = get_option( 'lendsure_penalty_type', 'percentage' );
-        $value = (float) get_option( 'lendsure_penalty_value', 5 );
+        $type = 'fixed' === ( $_POST['penalty_type'] ?? $loan->penalty_type ) ? 'fixed' : 'percentage';
+        $value = max( 0, (float) ( $_POST['penalty_value'] ?? $loan->penalty_value ) );
         $penalty = LendSure_Calculator::penalty( $loan, $type, $value );
         if ( $penalty <= 0 ) {
-            wp_die( esc_html__( 'Configured penalty is zero.', 'lend-sure' ) );
+            wp_die( esc_html__( 'Penalty value must be greater than zero.', 'lend-sure' ) );
         }
         $wpdb->update(
             LendSure_DB::table( 'loans' ),
@@ -755,7 +776,7 @@ class LendSure_Admin {
             array( '%d' )
         );
         $note = sanitize_text_field( wp_unslash( $_POST['note'] ?? __( 'Penalty applied.', 'lend-sure' ) ) );
-        $this->add_transaction( $loan_id, 'penalty_charged', $penalty, $this->today(), $note );
+        $this->add_transaction( $loan_id, 'penalty_charged', $penalty, $this->today(), $note, array( 'penalty_type' => $type, 'penalty_value' => $value ) );
         $this->redirect( 'lendsure-loans', array( 'action' => 'view', 'loan_id' => $loan_id, 'ls_notice' => __( 'Penalty applied.', 'lend-sure' ) ) );
     }
 
@@ -804,6 +825,10 @@ class LendSure_Admin {
             wp_die( esc_html__( 'Loan not found.', 'lend-sure' ) );
         }
         $currency = get_option( 'lendsure_currency', 'UGX' );
+        $company_name = get_option( 'lendsure_company_name', get_bloginfo( 'name' ) );
+        $company_details = get_option( 'lendsure_company_details', '' );
+        $company_logo_id = absint( get_option( 'lendsure_company_logo_id', 0 ) );
+        $company_logo_url = $company_logo_id ? wp_get_attachment_image_url( $company_logo_id, 'medium' ) : '';
         $lender_name = get_option( 'lendsure_lender_name', get_bloginfo( 'name' ) );
         $lender_phone = get_option( 'lendsure_lender_phone', '' );
         $lender_address = get_option( 'lendsure_lender_address', '' );
@@ -820,6 +845,23 @@ class LendSure_Admin {
         update_option( 'lendsure_grace_days', max( 0, absint( $_POST['grace_days'] ?? 3 ) ) );
         update_option( 'lendsure_penalty_type', 'fixed' === ( $_POST['penalty_type'] ?? '' ) ? 'fixed' : 'percentage' );
         update_option( 'lendsure_penalty_value', max( 0, (float) ( $_POST['penalty_value'] ?? 5 ) ) );
+        update_option( 'lendsure_company_name', sanitize_text_field( wp_unslash( $_POST['company_name'] ?? '' ) ) );
+        update_option( 'lendsure_company_details', sanitize_textarea_field( wp_unslash( $_POST['company_details'] ?? '' ) ) );
+        if ( ! empty( $_POST['remove_company_logo'] ) ) {
+            update_option( 'lendsure_company_logo_id', 0 );
+        } elseif ( ! empty( $_FILES['company_logo']['name'] ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            $logo_id = media_handle_upload( 'company_logo', 0, array(), array( 'test_form' => false ) );
+            if ( is_wp_error( $logo_id ) || ! wp_attachment_is_image( $logo_id ) ) {
+                if ( ! is_wp_error( $logo_id ) ) {
+                    wp_delete_attachment( $logo_id, true );
+                }
+                wp_die( esc_html__( 'The company logo could not be saved. Please upload a valid image.', 'lend-sure' ) );
+            }
+            update_option( 'lendsure_company_logo_id', absint( $logo_id ) );
+        }
         update_option( 'lendsure_lender_name', sanitize_text_field( wp_unslash( $_POST['lender_name'] ?? '' ) ) );
         update_option( 'lendsure_lender_phone', sanitize_text_field( wp_unslash( $_POST['lender_phone'] ?? '' ) ) );
         update_option( 'lendsure_lender_address', sanitize_textarea_field( wp_unslash( $_POST['lender_address'] ?? '' ) ) );
