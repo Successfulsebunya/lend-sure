@@ -3,7 +3,7 @@ Contributors: mocursor
 Tags: loans, lending, payments, interest, ledger
 Requires at least: 6.4
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 
 Lightweight private loan tracking inside the WordPress dashboard.
@@ -18,7 +18,9 @@ Lightweight private loan tracking inside the WordPress dashboard.
 * Dedicated loan transaction history.
 * Printable loan acknowledgement and acceptance document.
 * Upload PDF/JPG/PNG signed acknowledgement back to each loan.
-* Dashboard for active and overdue loans.
+* Dashboard for active, due today, due this week, grace-period, and overdue loans.
+* Reminders module with manual borrower emails and reminder activity log.
+* Optional daily admin due-date digest using WordPress mail and WP-Cron.
 * CSV export of the loan register.
 * Dedicated custom database tables for loan data.
 
@@ -33,3 +35,15 @@ Lightweight private loan tracking inside the WordPress dashboard.
 
 == Important ==
 This plugin is an administrative record-keeping tool. Review the legal wording, lending rules, permitted interest, penalties, tax obligations, privacy obligations, and enforceability applicable in your jurisdiction before using acknowledgement documents as legal instruments.
+
+== Changelog ==
+= 1.1.0 =
+* Added Due Today, Due This Week, Grace Period, Overdue and Upcoming timing states.
+* Added Reminders admin module.
+* Added manual borrower email reminders.
+* Added optional daily admin due-date digest.
+* Added reminder activity log.
+* Added reminder settings and updated dashboard workflow.
+
+= 1.0.0 =
+* Initial release.

@@ -14,7 +14,11 @@ Lend Sure is a lightweight private loan-management plugin for WordPress. It is d
 - Printable Loan Acknowledgement & Acceptance document.
 - Upload and retain signed acknowledgement copies as PDF, JPG, JPEG, or PNG.
 - Full payment and transaction history.
-- Dashboard for active and overdue loans.
+- Dashboard for active, due-today, due-this-week, grace-period, and overdue loans.
+- Dedicated Reminders module with a daily follow-up queue.
+- Manual borrower email reminders from the loan record or Reminders screen.
+- Optional daily admin due-date digest using `wp_mail()` and WP-Cron.
+- Reminder activity log for sent/failed reminder attempts.
 - CSV export of the loan register.
 - Dedicated custom database tables for loan data.
 
@@ -93,6 +97,15 @@ Each loan has a printable acknowledgement document. The recommended workflow is:
 
 The signed document remains associated with that loan for record keeping.
 
+
+## Due-Date & Reminder Workflow
+
+Lend Sure 1.1.0 classifies active loans as **Due Today**, **Due This Week**, **Grace Period**, **Overdue**, or **Upcoming**. The grace-period status uses the number of grace days configured in Settings.
+
+The **Lend Sure → Reminders** screen gives the administrator a focused follow-up list and allows a borrower email reminder to be sent when the borrower has a valid email address.
+
+An optional daily admin digest can also be enabled under **Lend Sure → Settings → Due-Date Reminders**. The digest is sent through WordPress `wp_mail()`. Because WP-Cron is traffic-driven, delivery is daily but not guaranteed at an exact clock time.
+
 ## Security and Access
 
 Lend Sure's administration screens require WordPress administrator-level `manage_options` capability. Forms use WordPress nonces and sanitization routines.
@@ -106,3 +119,18 @@ Lend Sure is an administrative record-keeping tool, not legal or financial advic
 ## License
 
 GPL-2.0-or-later.
+
+## Changelog
+
+### 1.1.0
+
+- Added due-date workflow statuses.
+- Added Reminders module.
+- Added manual borrower email reminders.
+- Added daily admin due-date digest.
+- Added reminder activity logging.
+- Added reminder settings and dashboard cards.
+
+### 1.0.0
+
+- Initial Lend Sure release.

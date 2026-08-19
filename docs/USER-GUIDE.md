@@ -52,7 +52,7 @@ For example, a value of `1` means the default due date is approximately one mont
 #### Grace Period (days)
 Stores the preferred grace period for your lending policy.
 
-> Note: In version 1.0.0, the grace-period setting is stored for your policy configuration but penalties are applied manually from the loan screen. Lend Sure does not automatically add a penalty after the grace period.
+> Note: In version 1.1.0, the grace-period setting also controls the **Grace Period** timing label, while penalties are still applied manually from the loan screen. Lend Sure does not automatically add a penalty after the grace period.
 
 #### Penalty Type
 Choose how the default penalty is calculated:
@@ -95,7 +95,7 @@ Shows the total currently accrued interest across active loans.
 #### Overdue
 Shows the total amount due on active loans whose due dates have passed.
 
-### Due & Active Loans Table
+### Due-Date Workflow Table
 
 This table lists active loans ordered by due date. It shows:
 
@@ -449,7 +449,7 @@ If configured as fixed:
 - Penalty value: UGX 20,000
 - Each time the administrator applies the default penalty, UGX 20,000 is added.
 
-> Important: Version 1.0.0 does not automatically apply penalties. The administrator decides when a penalty should be applied.
+> Important: Version 1.1.0 does not automatically apply penalties. The administrator decides when a penalty should be applied.
 
 ---
 
@@ -531,7 +531,7 @@ A simple routine for using Lend Sure is:
 ### When a Loan Reaches Its Due Date
 
 1. Open the Dashboard.
-2. Check the Due & Active Loans table.
+2. Check the Due-Date Workflow table and the Due Today / Due This Week / Overdue cards.
 3. Open the relevant loan.
 4. Record payment if received.
 5. If an extension is agreed, use **Extend Loan**.
@@ -551,8 +551,11 @@ A simple routine for using Lend Sure is:
 ### Active
 The loan still has an outstanding balance.
 
+### Grace Period
+An active loan enters Grace Period after its due date passes but before the configured grace days expire.
+
 ### Overdue
-In the Dashboard, an active loan is visually shown as overdue when its due date is earlier than the current date.
+An active loan becomes Overdue after both the due date and configured grace period have passed.
 
 ### Paid
 The principal, accrued interest, and accrued penalty have been fully cleared.
@@ -647,7 +650,7 @@ Open **Lend Sure → Settings** and confirm **Default Monthly Interest (%)** is 
 Open the loan and use **Replace Signed Copy**.
 
 ### A loan is overdue but no penalty was added
-This is expected in version 1.0.0. Penalties are applied manually from the individual loan screen.
+This is expected in version 1.1.0. Timing labels are automatic, but penalties are still applied manually from the individual loan screen.
 
 ### Why did a partial payment reduce interest before principal?
 Payments intentionally follow the order **Interest → Penalty → Principal**.
@@ -660,13 +663,81 @@ If **Capitalize unpaid interest and penalty into the new principal** was enabled
 
 ---
 
-## 20. Version 1.0.0 Notes
+## 20. Reminders and Due-Date Workflow
 
-The current release focuses on lightweight manual administration from WordPress. The following are not automated in version 1.0.0:
+Lend Sure 1.1.0 adds a dedicated follow-up workflow so you do not have to manually remember which borrowers need attention.
+
+### Timing Labels
+
+Active loans are classified automatically from the current date and the loan due date:
+
+- **Due Today** — the due date is today.
+- **Due This Week** — the due date is within the next seven days.
+- **Grace Period** — the due date has passed, but the configured grace period has not yet expired.
+- **Overdue** — the due date and grace period have both passed.
+- **Upcoming** — the loan is active but is more than seven days away from its due date.
+- **Paid** — the loan balance has been cleared.
+
+These labels do not change the financial balance. They are operational labels used to help you follow up on loans.
+
+### Reminders Module
+
+Go to **Lend Sure → Reminders**.
+
+The screen lists active loans that are due within seven days, due today, in grace, or overdue. For each loan you can see:
+
+- Borrower name
+- Due date
+- Timing status
+- Current amount due
+- Borrower email address
+- A link to manage the loan
+- An **Email Reminder** button when the borrower has a valid email address
+
+### Sending a Borrower Email Reminder
+
+You can send a reminder from either the **Reminders** screen or the individual loan record.
+
+1. Confirm the borrower's email address is correct.
+2. Click **Email Reminder** or **Send Email Reminder**.
+3. Lend Sure sends a plain-text email through WordPress `wp_mail()`.
+4. The message includes the current amount due, due date and timing status.
+5. The attempt is added to **Recent Reminder Activity** as sent or failed.
+
+The reminder does not change the loan, charge a penalty or extend the due date.
+
+### Daily Admin Due-Date Digest
+
+Go to **Lend Sure → Settings → Due-Date Reminders**.
+
+You can configure:
+
+- **Enable daily admin due-date digest** — switches the daily digest on or off.
+- **Digest Email** — the email address that receives the summary.
+- **Start Reminding Before Due Date (days)** — how many days before a due date a loan should enter the digest.
+
+The daily digest includes qualifying active loans and all loans already in grace or overdue.
+
+Lend Sure uses WP-Cron only to trigger the reminder digest. Loan balances and due-date calculations do not depend on WP-Cron. Because normal WP-Cron runs when the WordPress site receives traffic, the digest should be treated as daily rather than guaranteed at an exact clock time.
+
+### Recommended Daily Routine
+
+1. Open **Lend Sure → Dashboard**.
+2. Review **Due Today**, **Due This Week**, **Grace Period**, and **Overdue** cards.
+3. Open **Lend Sure → Reminders**.
+4. Contact borrowers who require follow-up.
+5. Send an email reminder where appropriate.
+6. Record any payment immediately when received.
+7. If you agree to an extension, use **Extend Loan** rather than manually changing the balance.
+8. Apply penalties only according to your agreed terms and applicable rules.
+
+## 21. Version 1.1.0 Notes
+
+The current release keeps the financial workflow administrator-controlled. The following are not automated in version 1.1.0:
 
 - Automatic SMS/WhatsApp reminders
 - Automatic penalty application
-- Automatic borrower notifications
+- Automatic borrower reminder emails (borrower emails are sent manually by the administrator)
 - Borrower self-service portal
 - Mobile Money payment reconciliation
 - Scheduled daily interest accrual
@@ -675,7 +746,7 @@ The administrator remains in control of payments, extensions, and penalties.
 
 ---
 
-## 21. Legal Notice
+## 22. Legal Notice
 
 Lend Sure provides administrative calculations and record keeping. It does not determine whether an interest rate, penalty, acknowledgement, or lending arrangement is legally enforceable.
 

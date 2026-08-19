@@ -42,6 +42,7 @@ class LendSure_Admin {
         add_submenu_page( 'lendsure', __( 'Dashboard', 'lend-sure' ), __( 'Dashboard', 'lend-sure' ), 'manage_options', 'lendsure', array( $this, 'dashboard_page' ) );
         add_submenu_page( 'lendsure', __( 'Borrowers', 'lend-sure' ), __( 'Borrowers', 'lend-sure' ), 'manage_options', 'lendsure-borrowers', array( $this, 'borrowers_page' ) );
         add_submenu_page( 'lendsure', __( 'Loans', 'lend-sure' ), __( 'Loans', 'lend-sure' ), 'manage_options', 'lendsure-loans', array( $this, 'loans_page' ) );
+        add_submenu_page( 'lendsure', __( 'Reminders', 'lend-sure' ), __( 'Reminders', 'lend-sure' ), 'manage_options', 'lendsure-reminders', array( $this, 'reminders_page' ) );
         add_submenu_page( 'lendsure', __( 'Settings', 'lend-sure' ), __( 'Settings', 'lend-sure' ), 'manage_options', 'lendsure-settings', array( $this, 'settings_page' ) );
     }
 
@@ -133,20 +134,32 @@ class LendSure_Admin {
         global $wpdb;
         $loans = LendSure_DB::table( 'loans' );
         $borrowers = LendSure_DB::table( 'borrowers' );
-        $today = $this->today();
 
         $active_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$loans} WHERE status = 'active'" );
         $principal = (float) $wpdb->get_var( "SELECT COALESCE(SUM(current_principal),0) FROM {$loans} WHERE status = 'active'" );
         $interest = (float) $wpdb->get_var( "SELECT COALESCE(SUM(accrued_interest),0) FROM {$loans} WHERE status = 'active'" );
-        $overdue = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(current_principal + accrued_interest + accrued_penalty),0) FROM {$loans} WHERE status = 'active' AND due_date < %s", $today ) );
-
         $due = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT l.*, b.full_name FROM {$loans} l INNER JOIN {$borrowers} b ON b.id=l.borrower_id
-                 WHERE l.status='active' ORDER BY l.due_date ASC LIMIT %d",
-                20
-            )
+            "SELECT l.*, b.full_name FROM {$loans} l INNER JOIN {$borrowers} b ON b.id=l.borrower_id
+             WHERE l.status='active' ORDER BY l.due_date ASC LIMIT 100"
         );
+
+        $due_today = 0.0;
+        $due_week = 0.0;
+        $grace = 0.0;
+        $overdue = 0.0;
+        foreach ( $due as $loan ) {
+            $timing = LendSure_Reminders::timing_status( $loan->due_date );
+            $amount = LendSure_Calculator::total_due( $loan );
+            if ( 'due_today' === $timing['key'] ) {
+                $due_today += $amount;
+            } elseif ( 'due_week' === $timing['key'] ) {
+                $due_week += $amount;
+            } elseif ( 'grace' === $timing['key'] ) {
+                $grace += $amount;
+            } elseif ( 'overdue' === $timing['key'] ) {
+                $overdue += $amount;
+            }
+        }
         ?>
         <div class="wrap lendsure-wrap">
             <h1><?php esc_html_e( 'Lend Sure', 'lend-sure' ); ?></h1>
@@ -158,25 +171,33 @@ class LendSure_Admin {
                 <div class="ls-card ls-card-danger"><span><?php esc_html_e( 'Overdue', 'lend-sure' ); ?></span><strong><?php echo $this->money( $overdue ); ?></strong></div>
             </div>
 
+            <div class="ls-cards ls-cards-secondary">
+                <div class="ls-card ls-card-warning"><span><?php esc_html_e( 'Due Today', 'lend-sure' ); ?></span><strong><?php echo $this->money( $due_today ); ?></strong></div>
+                <div class="ls-card"><span><?php esc_html_e( 'Due This Week', 'lend-sure' ); ?></span><strong><?php echo $this->money( $due_week ); ?></strong></div>
+                <div class="ls-card ls-card-grace"><span><?php esc_html_e( 'In Grace Period', 'lend-sure' ); ?></span><strong><?php echo $this->money( $grace ); ?></strong></div>
+                <div class="ls-card"><span><?php esc_html_e( 'Reminder Window', 'lend-sure' ); ?></span><strong><?php echo esc_html( absint( get_option( 'lendsure_reminder_days_before', 3 ) ) . ' days' ); ?></strong></div>
+            </div>
+
             <div class="ls-toolbar">
                 <a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-loans&action=new' ) ); ?>"><?php esc_html_e( 'Add Loan', 'lend-sure' ); ?></a>
                 <a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-borrowers&action=new' ) ); ?>"><?php esc_html_e( 'Add Borrower', 'lend-sure' ); ?></a>
+                <a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-reminders' ) ); ?>"><?php esc_html_e( 'Open Reminders', 'lend-sure' ); ?></a>
             </div>
 
-            <h2><?php esc_html_e( 'Due & Active Loans', 'lend-sure' ); ?></h2>
+            <h2><?php esc_html_e( 'Due-Date Workflow', 'lend-sure' ); ?></h2>
             <table class="widefat striped">
-                <thead><tr><th><?php esc_html_e( 'Borrower', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Due Date', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Total Due', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Status', 'lend-sure' ); ?></th><th></th></tr></thead>
+                <thead><tr><th><?php esc_html_e( 'Borrower', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Due Date', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Total Due', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Timing', 'lend-sure' ); ?></th><th></th></tr></thead>
                 <tbody>
                 <?php if ( ! $due ) : ?>
                     <tr><td colspan="5"><?php esc_html_e( 'No active loans yet.', 'lend-sure' ); ?></td></tr>
-                <?php else : foreach ( $due as $loan ) :
-                    $is_overdue = $loan->due_date < $today;
+                <?php else : foreach ( array_slice( $due, 0, 20 ) as $loan ) :
+                    $timing = LendSure_Reminders::timing_status( $loan->due_date );
                     ?>
                     <tr>
                         <td><?php echo esc_html( $loan->full_name ); ?></td>
                         <td><?php echo esc_html( $loan->due_date ); ?></td>
                         <td><?php echo $this->money( LendSure_Calculator::total_due( $loan ) ); ?></td>
-                        <td><span class="ls-badge <?php echo $is_overdue ? 'is-overdue' : ''; ?>"><?php echo esc_html( $is_overdue ? __( 'Overdue', 'lend-sure' ) : __( 'Active', 'lend-sure' ) ); ?></span></td>
+                        <td><span class="ls-badge is-<?php echo esc_attr( $timing['key'] ); ?>"><?php echo esc_html( $timing['label'] ); ?></span></td>
                         <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-loans&action=view&loan_id=' . (int) $loan->id ) ); ?>"><?php esc_html_e( 'Open', 'lend-sure' ); ?></a></td>
                     </tr>
                 <?php endforeach; endif; ?>
@@ -256,7 +277,9 @@ class LendSure_Admin {
                 <thead><tr><th>#</th><th><?php esc_html_e( 'Borrower', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Principal', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Interest', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Due', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Total Due', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Status', 'lend-sure' ); ?></th><th></th></tr></thead>
                 <tbody>
                 <?php if ( ! $rows ) : ?><tr><td colspan="8"><?php esc_html_e( 'No loans yet.', 'lend-sure' ); ?></td></tr>
-                <?php else : foreach ( $rows as $loan ) : ?>
+                <?php else : foreach ( $rows as $loan ) :
+                    $timing = 'active' === $loan->status ? LendSure_Reminders::timing_status( $loan->due_date ) : array( 'key' => 'paid', 'label' => __( 'Paid', 'lend-sure' ) );
+                    ?>
                     <tr>
                         <td><?php echo esc_html( $loan->id ); ?></td>
                         <td><?php echo esc_html( $loan->full_name ); ?></td>
@@ -264,7 +287,7 @@ class LendSure_Admin {
                         <td><?php echo esc_html( number_format_i18n( $loan->interest_rate, 2 ) . '%' ); ?></td>
                         <td><?php echo esc_html( $loan->due_date ); ?></td>
                         <td><?php echo $this->money( LendSure_Calculator::total_due( $loan ) ); ?></td>
-                        <td><?php echo esc_html( ucfirst( $loan->status ) ); ?></td>
+                        <td><span class="ls-badge is-<?php echo esc_attr( $timing['key'] ); ?>"><?php echo esc_html( $timing['label'] ); ?></span></td>
                         <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-loans&action=view&loan_id=' . (int) $loan->id ) ); ?>"><?php esc_html_e( 'Manage', 'lend-sure' ); ?></a></td>
                     </tr>
                 <?php endforeach; endif; ?>
@@ -321,6 +344,7 @@ class LendSure_Admin {
         $transactions = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . LendSure_DB::table( 'transactions' ) . ' WHERE loan_id=%d ORDER BY transaction_date DESC, id DESC', $loan_id ) );
         $ack_url = $loan->acknowledgement_attachment_id ? wp_get_attachment_url( (int) $loan->acknowledgement_attachment_id ) : '';
         $total_due = LendSure_Calculator::total_due( $loan );
+        $timing = 'active' === $loan->status ? LendSure_Reminders::timing_status( $loan->due_date ) : array( 'key' => 'paid', 'label' => __( 'Paid', 'lend-sure' ) );
         ?>
         <div class="wrap lendsure-wrap">
             <h1><?php echo esc_html( sprintf( __( 'Loan #%1$d — %2$s', 'lend-sure' ), $loan->id, $loan->full_name ) ); ?></h1>
@@ -343,7 +367,7 @@ class LendSure_Admin {
                     <p><strong><?php esc_html_e( 'Projected next-month interest:', 'lend-sure' ); ?></strong> <?php echo $this->money( LendSure_Calculator::interest( $loan->current_principal, $loan->interest_rate ) ); ?></p>
                     <p><strong><?php esc_html_e( 'Start:', 'lend-sure' ); ?></strong> <?php echo esc_html( $loan->start_date ); ?></p>
                     <p><strong><?php esc_html_e( 'Due:', 'lend-sure' ); ?></strong> <?php echo esc_html( $loan->due_date ); ?></p>
-                    <p><strong><?php esc_html_e( 'Status:', 'lend-sure' ); ?></strong> <?php echo esc_html( ucfirst( $loan->status ) ); ?></p>
+                    <p><strong><?php esc_html_e( 'Status:', 'lend-sure' ); ?></strong> <span class="ls-badge is-<?php echo esc_attr( $timing['key'] ); ?>"><?php echo esc_html( $timing['label'] ); ?></span></p>
                 </section>
 
                 <section class="ls-panel">
@@ -362,6 +386,19 @@ class LendSure_Admin {
                     </form>
                 </section>
             </div>
+
+            <?php if ( 'paid' !== $loan->status && is_email( $loan->email ) ) : ?>
+                <section class="ls-panel ls-reminder-panel">
+                    <h2><?php esc_html_e( 'Borrower Reminder', 'lend-sure' ); ?></h2>
+                    <p><?php echo esc_html( sprintf( __( 'Send a payment reminder to %s. The message includes the current amount due, due date and timing status.', 'lend-sure' ), $loan->email ) ); ?></p>
+                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                        <input type="hidden" name="action" value="lendsure_send_borrower_reminder">
+                        <input type="hidden" name="loan_id" value="<?php echo esc_attr( $loan->id ); ?>">
+                        <?php wp_nonce_field( 'lendsure_send_borrower_reminder_' . $loan->id ); ?>
+                        <?php submit_button( __( 'Send Email Reminder', 'lend-sure' ), 'secondary', 'submit', false ); ?>
+                    </form>
+                </section>
+            <?php endif; ?>
 
             <?php if ( 'paid' !== $loan->status ) : ?>
             <div class="ls-grid-3">
@@ -430,6 +467,62 @@ class LendSure_Admin {
         return get_option( 'lendsure_currency', 'UGX' ) . ' ' . number_format_i18n( (float) $amount, 0 );
     }
 
+    public function reminders_page() {
+        global $wpdb;
+        $rows = LendSure_Reminders::get_due_loans( 250 );
+        $logs = $wpdb->get_results( 'SELECT * FROM ' . LendSure_DB::table( 'reminders' ) . ' ORDER BY id DESC LIMIT 30' );
+        ?>
+        <div class="wrap lendsure-wrap">
+            <h1><?php esc_html_e( 'Loan Reminders', 'lend-sure' ); ?></h1>
+            <?php $this->notice(); ?>
+            <p><?php esc_html_e( 'Use this screen as the daily follow-up list. Timing is calculated from each active loan due date and your grace-period setting.', 'lend-sure' ); ?></p>
+
+            <table class="widefat striped ls-table-margin">
+                <thead><tr><th><?php esc_html_e( 'Borrower', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Due Date', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Timing', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Amount Due', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Email', 'lend-sure' ); ?></th><th></th></tr></thead>
+                <tbody>
+                <?php if ( ! $rows ) : ?><tr><td colspan="6"><?php esc_html_e( 'No active loans.', 'lend-sure' ); ?></td></tr>
+                <?php else : foreach ( $rows as $loan ) :
+                    $timing = LendSure_Reminders::timing_status( $loan->due_date );
+                    if ( 'upcoming' === $timing['key'] && $timing['days'] > 7 ) {
+                        continue;
+                    }
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( $loan->full_name ); ?></td>
+                        <td><?php echo esc_html( $loan->due_date ); ?></td>
+                        <td><span class="ls-badge is-<?php echo esc_attr( $timing['key'] ); ?>"><?php echo esc_html( $timing['label'] ); ?></span></td>
+                        <td><?php echo $this->money( LendSure_Calculator::total_due( $loan ) ); ?></td>
+                        <td><?php echo esc_html( $loan->email ?: '—' ); ?></td>
+                        <td>
+                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-loans&action=view&loan_id=' . (int) $loan->id ) ); ?>"><?php esc_html_e( 'Manage', 'lend-sure' ); ?></a>
+                            <?php if ( is_email( $loan->email ) ) : ?>
+                                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ls-inline-form">
+                                    <input type="hidden" name="action" value="lendsure_send_borrower_reminder">
+                                    <input type="hidden" name="loan_id" value="<?php echo esc_attr( $loan->id ); ?>">
+                                    <?php wp_nonce_field( 'lendsure_send_borrower_reminder_' . $loan->id ); ?>
+                                    <button class="button button-small" type="submit"><?php esc_html_e( 'Email Reminder', 'lend-sure' ); ?></button>
+                                </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+
+            <h2><?php esc_html_e( 'Recent Reminder Activity', 'lend-sure' ); ?></h2>
+            <table class="widefat striped">
+                <thead><tr><th><?php esc_html_e( 'Date', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Type', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Recipient', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Status', 'lend-sure' ); ?></th></tr></thead>
+                <tbody>
+                <?php if ( ! $logs ) : ?><tr><td colspan="4"><?php esc_html_e( 'No reminder activity yet.', 'lend-sure' ); ?></td></tr>
+                <?php else : foreach ( $logs as $log ) : ?>
+                    <tr><td><?php echo esc_html( $log->created_at ); ?></td><td><?php echo esc_html( ucwords( str_replace( '_', ' ', $log->type ) ) ); ?></td><td><?php echo esc_html( $log->recipient ); ?></td><td><?php echo esc_html( ucfirst( $log->status ) ); ?></td></tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+    }
+
     public function settings_page() {
         ?>
         <div class="wrap lendsure-wrap">
@@ -450,6 +543,12 @@ class LendSure_Admin {
                 <p><label><?php esc_html_e( 'Lender Name', 'lend-sure' ); ?><input name="lender_name" type="text" class="regular-text" value="<?php echo esc_attr( get_option( 'lendsure_lender_name', '' ) ); ?>"></label></p>
                 <p><label><?php esc_html_e( 'Lender Phone', 'lend-sure' ); ?><input name="lender_phone" type="text" class="regular-text" value="<?php echo esc_attr( get_option( 'lendsure_lender_phone', '' ) ); ?>"></label></p>
                 <p><label><?php esc_html_e( 'Lender Address', 'lend-sure' ); ?><textarea name="lender_address" rows="3" class="large-text"><?php echo esc_textarea( get_option( 'lendsure_lender_address', '' ) ); ?></textarea></label></p>
+
+                <h2><?php esc_html_e( 'Due-Date Reminders', 'lend-sure' ); ?></h2>
+                <p><label class="ls-check-label"><input name="reminders_enabled" type="checkbox" value="1" <?php checked( get_option( 'lendsure_reminders_enabled', '1' ), '1' ); ?>> <?php esc_html_e( 'Enable daily admin due-date digest', 'lend-sure' ); ?></label></p>
+                <p><label><?php esc_html_e( 'Digest Email', 'lend-sure' ); ?><input name="reminder_email" type="email" class="regular-text" value="<?php echo esc_attr( get_option( 'lendsure_reminder_email', get_option( 'admin_email' ) ) ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Start Reminding Before Due Date (days)', 'lend-sure' ); ?><input name="reminder_days_before" min="0" max="30" type="number" value="<?php echo esc_attr( get_option( 'lendsure_reminder_days_before', 3 ) ); ?>"></label></p>
+                <p class="description"><?php esc_html_e( 'WordPress sends the digest through wp_mail. WP-Cron is traffic-driven, so the message is daily but not guaranteed at an exact clock time.', 'lend-sure' ); ?></p>
                 <?php submit_button( __( 'Save Settings', 'lend-sure' ) ); ?>
             </form>
         </div>
@@ -724,6 +823,10 @@ class LendSure_Admin {
         update_option( 'lendsure_lender_name', sanitize_text_field( wp_unslash( $_POST['lender_name'] ?? '' ) ) );
         update_option( 'lendsure_lender_phone', sanitize_text_field( wp_unslash( $_POST['lender_phone'] ?? '' ) ) );
         update_option( 'lendsure_lender_address', sanitize_textarea_field( wp_unslash( $_POST['lender_address'] ?? '' ) ) );
+        update_option( 'lendsure_reminders_enabled', ! empty( $_POST['reminders_enabled'] ) ? '1' : '0' );
+        $reminder_email = sanitize_email( wp_unslash( $_POST['reminder_email'] ?? get_option( 'admin_email' ) ) );
+        update_option( 'lendsure_reminder_email', is_email( $reminder_email ) ? $reminder_email : get_option( 'admin_email' ) );
+        update_option( 'lendsure_reminder_days_before', min( 30, max( 0, absint( $_POST['reminder_days_before'] ?? 3 ) ) ) );
         $this->redirect( 'lendsure-settings', array( 'ls_notice' => __( 'Settings saved.', 'lend-sure' ) ) );
     }
 

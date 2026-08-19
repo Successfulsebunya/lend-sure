@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class LendSure_DB {
-    const DB_VERSION = '1.0.0';
+    const DB_VERSION = '1.1.0';
 
     public static function table( $name ) {
         global $wpdb;
@@ -33,6 +33,9 @@ class LendSure_DB {
         add_option( 'lendsure_lender_name', get_bloginfo( 'name' ) );
         add_option( 'lendsure_lender_phone', '' );
         add_option( 'lendsure_lender_address', '' );
+        add_option( 'lendsure_reminders_enabled', '1' );
+        add_option( 'lendsure_reminder_email', get_option( 'admin_email' ) );
+        add_option( 'lendsure_reminder_days_before', '3' );
     }
 
     private static function create_tables() {
@@ -45,6 +48,7 @@ class LendSure_DB {
         $loans = self::table( 'loans' );
         $payments = self::table( 'payments' );
         $transactions = self::table( 'transactions' );
+        $reminders = self::table( 'reminders' );
 
         $sql_borrowers = "CREATE TABLE {$borrowers} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -115,9 +119,24 @@ class LendSure_DB {
             KEY transaction_date (transaction_date)
         ) {$charset};";
 
+        $sql_reminders = "CREATE TABLE {$reminders} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            loan_id bigint(20) unsigned NOT NULL DEFAULT 0,
+            type varchar(50) NOT NULL,
+            recipient varchar(190) DEFAULT '',
+            status varchar(30) NOT NULL DEFAULT 'sent',
+            message longtext NULL,
+            created_at datetime NOT NULL,
+            PRIMARY KEY  (id),
+            KEY loan_id (loan_id),
+            KEY type (type),
+            KEY created_at (created_at)
+        ) {$charset};";
+
         dbDelta( $sql_borrowers );
         dbDelta( $sql_loans );
         dbDelta( $sql_payments );
         dbDelta( $sql_transactions );
+        dbDelta( $sql_reminders );
     }
 }
