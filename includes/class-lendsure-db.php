@@ -5,9 +5,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class LendSure_DB {
     const DB_VERSION = '1.2.0';
+    const CACHE_GROUP = 'lend_sure';
+
+    private static $tables = array(
+        'borrowers',
+        'loans',
+        'payments',
+        'transactions',
+        'reminders',
+    );
 
     public static function table( $name ) {
         global $wpdb;
+
+        $name = sanitize_key( $name );
+        if ( ! in_array( $name, self::$tables, true ) ) {
+            return '';
+        }
+
         return $wpdb->prefix . 'lendsure_' . $name;
     }
 
@@ -17,6 +32,7 @@ class LendSure_DB {
         self::seed_options();
         self::migrate( $previous_version );
         update_option( 'lendsure_db_version', self::DB_VERSION );
+        self::flush_cache();
     }
 
     public static function maybe_upgrade() {
@@ -28,11 +44,16 @@ class LendSure_DB {
     private static function migrate( $previous_version ) {
         if ( $previous_version && version_compare( $previous_version, '1.2.0', '<' ) ) {
             global $wpdb;
-            $type = 'fixed' === get_option( 'lendsure_penalty_type', 'percentage' ) ? 'fixed' : 'percentage';
+
+            $type  = 'fixed' === get_option( 'lendsure_penalty_type', 'percentage' ) ? 'fixed' : 'percentage';
             $value = max( 0, (float) get_option( 'lendsure_penalty_value', 5 ) );
+            $table = self::table( 'loans' );
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time migration write; activate() flushes the Lend Sure object cache after migration.
             $wpdb->query(
                 $wpdb->prepare(
-                    'UPDATE ' . self::table( 'loans' ) . ' SET penalty_type = %s, penalty_value = %f',
+                    'UPDATE %i SET penalty_type = %s, penalty_value = %f',
+                    $table,
                     $type,
                     $value
                 )
@@ -58,17 +79,292 @@ class LendSure_DB {
         add_option( 'lendsure_reminder_days_before', '3' );
     }
 
+    public static function flush_cache() {
+        wp_cache_flush_group( self::CACHE_GROUP );
+    }
+
+    private static function cached_query( $cache_key, $callback ) {
+        $found  = false;
+        $cached = wp_cache_get( $cache_key, self::CACHE_GROUP, false, $found );
+
+        if ( $found ) {
+            return $cached;
+        }
+
+        $value = call_user_func( $callback );
+        wp_cache_set( $cache_key, $value, self::CACHE_GROUP, 5 * MINUTE_IN_SECONDS );
+        return $value;
+    }
+
+    public static function get_loan( $loan_id ) {
+        global $wpdb;
+
+        $loan_id = absint( $loan_id );
+        if ( ! $loan_id ) {
+            return null;
+        }
+
+        $loans     = self::table( 'loans' );
+        $borrowers = self::table( 'borrowers' );
+        $cache_key = 'loan_' . $loan_id;
+
+        return self::cached_query(
+            $cache_key,
+            static function () use ( $wpdb, $loans, $borrowers, $loan_id ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading plugin-owned custom tables; result is object-cached.
+                return $wpdb->get_row(
+                    $wpdb->prepare(
+                        'SELECT l.*, b.full_name, b.phone, b.email, b.address, b.national_id
+                        FROM %i l
+                        INNER JOIN %i b ON b.id = l.borrower_id
+                        WHERE l.id = %d',
+                        $loans,
+                        $borrowers,
+                        $loan_id
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_due_loans( $limit = 100 ) {
+        global $wpdb;
+
+        $limit     = max( 1, absint( $limit ) );
+        $loans     = self::table( 'loans' );
+        $borrowers = self::table( 'borrowers' );
+        $cache_key = 'due_loans_' . $limit;
+
+        return self::cached_query(
+            $cache_key,
+            static function () use ( $wpdb, $loans, $borrowers, $limit ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading plugin-owned custom tables; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT l.*, b.full_name, b.phone, b.email
+                        FROM %i l
+                        INNER JOIN %i b ON b.id = l.borrower_id
+                        WHERE l.status = 'active'
+                        ORDER BY l.due_date ASC
+                        LIMIT %d",
+                        $loans,
+                        $borrowers,
+                        $limit
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_dashboard_totals() {
+        global $wpdb;
+
+        $loans = self::table( 'loans' );
+
+        return self::cached_query(
+            'dashboard_totals',
+            static function () use ( $wpdb, $loans ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                return $wpdb->get_row(
+                    $wpdb->prepare(
+                        "SELECT COUNT(*) AS active_count,
+                            COALESCE(SUM(current_principal), 0) AS principal,
+                            COALESCE(SUM(accrued_interest), 0) AS interest
+                        FROM %i
+                        WHERE status = 'active'",
+                        $loans
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_borrowers( $for_select = false ) {
+        global $wpdb;
+
+        $borrowers = self::table( 'borrowers' );
+        $cache_key = $for_select ? 'borrowers_select' : 'borrowers_all';
+
+        return self::cached_query(
+            $cache_key,
+            static function () use ( $wpdb, $borrowers, $for_select ) {
+                if ( $for_select ) {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                    return $wpdb->get_results(
+                        $wpdb->prepare(
+                            'SELECT id, full_name, phone FROM %i ORDER BY full_name ASC',
+                            $borrowers
+                        )
+                    );
+                }
+
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT * FROM %i ORDER BY full_name ASC',
+                        $borrowers
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_loans() {
+        global $wpdb;
+
+        $loans     = self::table( 'loans' );
+        $borrowers = self::table( 'borrowers' );
+
+        return self::cached_query(
+            'loans_all',
+            static function () use ( $wpdb, $loans, $borrowers ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading plugin-owned custom tables; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT l.*, b.full_name FROM %i l INNER JOIN %i b ON b.id = l.borrower_id ORDER BY l.id DESC',
+                        $loans,
+                        $borrowers
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_payments( $loan_id ) {
+        global $wpdb;
+
+        $loan_id  = absint( $loan_id );
+        $payments = self::table( 'payments' );
+
+        return self::cached_query(
+            'payments_' . $loan_id,
+            static function () use ( $wpdb, $payments, $loan_id ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT * FROM %i WHERE loan_id = %d ORDER BY payment_date DESC, id DESC',
+                        $payments,
+                        $loan_id
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_transactions( $loan_id ) {
+        global $wpdb;
+
+        $loan_id      = absint( $loan_id );
+        $transactions = self::table( 'transactions' );
+
+        return self::cached_query(
+            'transactions_' . $loan_id,
+            static function () use ( $wpdb, $transactions, $loan_id ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT * FROM %i WHERE loan_id = %d ORDER BY transaction_date DESC, id DESC',
+                        $transactions,
+                        $loan_id
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_reminder_logs( $limit = 30 ) {
+        global $wpdb;
+
+        $limit     = max( 1, absint( $limit ) );
+        $reminders = self::table( 'reminders' );
+
+        return self::cached_query(
+            'reminders_' . $limit,
+            static function () use ( $wpdb, $reminders, $limit ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT * FROM %i ORDER BY id DESC LIMIT %d',
+                        $reminders,
+                        $limit
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_export_loans() {
+        global $wpdb;
+
+        $loans     = self::table( 'loans' );
+        $borrowers = self::table( 'borrowers' );
+
+        return self::cached_query(
+            'export_loans',
+            static function () use ( $wpdb, $loans, $borrowers ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading plugin-owned custom tables; result is object-cached.
+                return $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT l.*, b.full_name, b.phone, b.email FROM %i l INNER JOIN %i b ON b.id = l.borrower_id ORDER BY l.id DESC',
+                        $loans,
+                        $borrowers
+                    ),
+                    ARRAY_A
+                );
+            }
+        );
+    }
+
+    public static function insert( $table_name, $data, $format = null ) {
+        global $wpdb;
+
+        $table = self::table( $table_name );
+        if ( ! $table ) {
+            return false;
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Writing to a plugin-owned custom table through wpdb's insert API.
+        $result = $wpdb->insert( $table, $data, $format );
+        if ( false !== $result ) {
+            self::flush_cache();
+        }
+
+        return $result;
+    }
+
+    public static function insert_id() {
+        global $wpdb;
+        return absint( $wpdb->insert_id );
+    }
+
+    public static function update( $table_name, $data, $where, $format = null, $where_format = null ) {
+        global $wpdb;
+
+        $table = self::table( $table_name );
+        if ( ! $table ) {
+            return false;
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned table write; the Lend Sure object cache is flushed immediately after a successful update.
+        $result = $wpdb->update( $table, $data, $where, $format, $where_format );
+        if ( false !== $result ) {
+            self::flush_cache();
+        }
+
+        return $result;
+    }
+
     private static function create_tables() {
         global $wpdb;
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
         $charset = $wpdb->get_charset_collate();
 
-        $borrowers = self::table( 'borrowers' );
-        $loans = self::table( 'loans' );
-        $payments = self::table( 'payments' );
+        $borrowers    = self::table( 'borrowers' );
+        $loans        = self::table( 'loans' );
+        $payments     = self::table( 'payments' );
         $transactions = self::table( 'transactions' );
-        $reminders = self::table( 'reminders' );
+        $reminders    = self::table( 'reminders' );
 
         $sql_borrowers = "CREATE TABLE {$borrowers} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

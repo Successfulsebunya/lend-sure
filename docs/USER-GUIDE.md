@@ -52,7 +52,7 @@ For example, a value of `1` means the default due date is approximately one mont
 #### Grace Period (days)
 Stores the preferred grace period for your lending policy.
 
-> Note: In version 1.2.0, the grace-period setting controls the **Grace Period** timing label. Penalties remain administrator-controlled and are not automatically charged after the grace period.
+> Note: In version 1.2.1, the grace-period setting controls the **Grace Period** timing label. Penalties remain administrator-controlled and are not automatically charged after the grace period.
 
 #### Penalty Type
 Choose how the default penalty is calculated:
@@ -61,7 +61,7 @@ Choose how the default penalty is calculated:
 - **Fixed amount** — for example, UGX 20,000.
 
 #### Penalty Value
-Enter the default percentage or fixed amount. In version 1.2.0 this is used as the starting penalty when creating a new loan; each loan stores its own agreed penalty terms.
+Enter the default percentage or fixed amount. In version 1.2.1 this is used as the starting penalty when creating a new loan; each loan stores its own agreed penalty terms.
 
 ### Acknowledgement Header / Company
 
@@ -71,15 +71,7 @@ These fields create a proper document header for the Loan Acknowledgement & Acce
 - Company Details — for example registration information, email, website, or address
 - Company Logo
 
-A compact horizontal or square logo works best.
-
-### Lender / Signatory Details
-
-These details identify the lender/signatory on the acknowledgement:
-
-- Lender Name
-- Lender Phone
-- Lender Address
+The company/business is treated as the lender on the acknowledgement. The logo is centered, with the company name and company details directly beneath it. A compact horizontal or square logo works best.
 
 Click **Save Settings** after making changes.
 
@@ -277,7 +269,7 @@ The acknowledgement is intended to create a branded PDF record of the original l
 5. Review the document.
 6. Click the single **Save PDF** action.
 7. In the browser dialog choose **Save as PDF**. Printing is still available from that same browser dialog if you need a paper copy.
-8. Have the borrower, lender, and witness complete the required signature areas.
+8. Have the borrower, lender/authorized signatory, and one or both witnesses complete the required signature areas.
 9. Scan the signed document or take a clear photograph.
 10. Return to the same loan record.
 11. Choose the signed file.
@@ -394,9 +386,12 @@ If the borrower needs more time, open the loan and use **Extend Loan**.
 ### Steps
 
 1. Open the loan.
-2. Enter the number of additional months.
-3. Decide whether to keep **Capitalize unpaid interest and penalty into the new principal** checked.
-4. Click **Extend Loan**.
+2. Set **Extension Date** to the actual date the extension was agreed. If you are updating the record later, you may choose that earlier date.
+3. Enter the number of additional months.
+4. Decide whether to keep **Capitalize unpaid interest and penalty into the new principal** checked.
+5. Click **Extend Loan**.
+
+The Extension Date is used for the extension, capitalization, and extension-interest entries in the transaction history. The new due date still moves forward from the loan's existing due date by the number of months selected.
 
 ### With Capitalization Enabled
 
@@ -469,7 +464,7 @@ If configured as fixed:
 - Penalty value: UGX 20,000
 - Each time the administrator applies that fixed penalty, UGX 20,000 is added unless the value is intentionally edited before applying it.
 
-> Important: Version 1.2.0 does not automatically apply penalties. The administrator decides when a penalty should be applied. The transaction record stores the applied penalty type/value.
+> Important: Version 1.2.1 does not automatically apply penalties. The administrator decides when a penalty should be applied. The transaction record stores the applied penalty type/value.
 
 ---
 
@@ -670,7 +665,7 @@ Open **Lend Sure → Settings** and confirm **Default Monthly Interest (%)** is 
 Open the loan and use **Replace Signed Copy**.
 
 ### A loan is overdue but no penalty was added
-This is expected in version 1.2.0. Timing labels are automatic, but penalties are still applied manually from the individual loan screen using the loan-specific agreed penalty as the starting value.
+This is expected in version 1.2.1. Timing labels are automatic, but penalties are still applied manually from the individual loan screen using the loan-specific agreed penalty as the starting value.
 
 ### Why did a partial payment reduce interest before principal?
 Payments intentionally follow the order **Interest → Penalty → Principal**.
@@ -724,7 +719,7 @@ You can send a reminder from either the **Reminders** screen or the individual l
 4. The message includes the current amount due, due date and timing status.
 5. The attempt is added to **Recent Reminder Activity** as sent or failed.
 
-The reminder does not change the loan, charge a penalty or extend the due date. When the borrower reminder is sent, version 1.2.0 also sends a copy to the configured lender/admin digest email when that address is valid and different from the borrower email.
+The reminder does not change the loan, charge a penalty or extend the due date. When the borrower reminder is sent, version 1.2.1 also sends a copy to the configured lender/admin digest email when that address is valid and different from the borrower email.
 
 ### Daily Admin Due-Date Digest
 
@@ -751,9 +746,9 @@ Lend Sure uses WP-Cron only to trigger the reminder digest. Loan balances and du
 7. If you agree to an extension, use **Extend Loan** rather than manually changing the balance.
 8. Apply penalties only according to your agreed terms and applicable rules.
 
-## 21. Version 1.2.0 Notes
+## 21. Version 1.2.1 Notes
 
-Version 1.2.0 adds branded acknowledgement headers, per-loan penalty terms, editable penalty application, and the Save PDF acknowledgement workflow. The financial workflow remains administrator-controlled. The following are not automated in version 1.2.0:
+Version 1.2.1 is a maintenance and usability update. It improves email-reminder error handling, adds a historical **Extension Date**, centers the acknowledgement logo with company/lender details underneath, and replaces the thumbprint field with a second witness signature area. The financial workflow remains administrator-controlled. The following are not automated in version 1.2.1:
 
 - Automatic SMS/WhatsApp reminders (email reminders remain available)
 - Automatic penalty application
@@ -771,3 +766,13 @@ The administrator remains in control of payments, extensions, and penalties.
 Lend Sure provides administrative calculations and record keeping. It does not determine whether an interest rate, penalty, acknowledgement, or lending arrangement is legally enforceable.
 
 Before using the plugin for formal lending activities, obtain appropriate advice regarding lending, consumer protection, taxation, privacy, interest, penalties, and document enforceability in the applicable jurisdiction.
+
+
+## Version 1.2.2 compliance update
+
+Version 1.2.2 is a maintenance release focused on WordPress security, internationalization, database-query, output-escaping, and packaging compliance. It does not change the core loan calculation rules.
+
+
+## Version 1.2.3 compliance update
+
+Version 1.2.3 completes the remaining items reported by the second WordPress Plugin Check scan after version 1.2.2. It adjusts translator-comment placement and documents cache invalidation for two intentional custom-table write operations. There are no changes to loan calculations, repayment allocation, penalties, extensions, acknowledgements, or reminder behavior.

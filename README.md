@@ -2,7 +2,7 @@
 
 **Lend Sure** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, signed acknowledgements, due dates, reminders, and transaction history from the WordPress dashboard.
 
-- **Version:** 1.2.0
+- **Version:** 1.2.3
 - **Default interest:** 20% per month, configurable
 - **WordPress:** 6.4+
 - **PHP:** 7.4+
@@ -20,12 +20,13 @@
 - Editable one-off penalty application while retaining the agreed penalty on the loan record.
 - Partial payment allocation: **Interest → Penalty → Principal**.
 - Loan extensions with optional capitalization.
+- Administrator-selectable extension date for retrospective loan updates.
 - Custom acknowledgement header with **company name, logo, and company details**.
 - Branded Loan Acknowledgement & Acceptance containing interest, due date, and agreed penalty terms.
 - Single **Save PDF** acknowledgement workflow using the browser's native PDF output.
 - Upload signed acknowledgement copies back to each loan.
 - Due Today, Due This Week, Grace Period, Overdue, and Upcoming statuses.
-- Manual borrower email reminders with a lender/admin copy.
+- Manual borrower email reminders with a lender/admin copy and safer mail/SMTP failure handling.
 - Optional daily admin/lender due-date digest through `wp_mail()` and WP-Cron.
 - Reminder activity logging.
 - Payment and transaction history.
@@ -38,7 +39,7 @@
 2. In WordPress, open **Plugins → Add New → Upload Plugin**.
 3. Upload and activate Lend Sure.
 4. Open **Lend Sure → Settings**.
-5. Configure loan defaults, company acknowledgement header, lender/signatory details, and reminder settings.
+5. Configure loan defaults, company/lender acknowledgement details, and reminder settings.
 6. Add a borrower and create the first loan.
 
 ## Recommended Settings
@@ -51,7 +52,6 @@ For the current lending workflow:
 - Grace period: your preferred number of days
 - Default penalty: percentage or fixed amount
 - Company/business name, logo, and header details
-- Lender/signatory name, phone, and address
 
 Defaults are only starting values. Interest and penalty terms can be set on each new loan.
 
@@ -70,7 +70,7 @@ If the borrower pays UGX 400,000:
 3. New principal: UGX 800,000.
 4. Projected next-month interest at 20%: UGX 160,000.
 
-## Penalty Terms in v1.2.0
+## Penalty Terms
 
 Each loan stores its own:
 
@@ -81,16 +81,13 @@ These are captured when the loan is created and displayed in the acknowledgement
 
 ## Loan Acknowledgements
 
-Version 1.2.0 adds a proper business header to the acknowledgement. Under **Lend Sure → Settings**, you can configure:
+Version 1.2.3 retains the business header and acknowledgement workflow. Under **Lend Sure → Settings**, you can configure:
 
 - Company / Business Name
 - Company Logo
 - Company Details
-- Lender / Signatory Name
-- Phone
-- Address
 
-The acknowledgement contains the original principal, monthly interest, agreed late penalty, original due date, additional terms, signatures, witness area, and optional thumbprint.
+The acknowledgement contains the original principal, monthly interest, agreed late penalty, original due date, additional terms, borrower/lender signatures, and two witness signature areas.
 
 ### PDF workflow
 
@@ -105,13 +102,13 @@ This keeps the plugin lightweight by avoiding a large bundled PDF-rendering libr
 
 ## Reminders
 
-Version 1.2.0 retains the v1.1.0 reminder workflow:
+Version 1.2.3 retains the reminder workflow and hardened mail failure handling:
 
 - borrower reminders are sent manually via WordPress `wp_mail()` and a lender/admin copy is sent to the configured digest email;
 - an optional daily lender/admin digest is scheduled using WP-Cron;
 - reminder attempts are logged.
 
-SMS is not built into v1.2.0 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
+SMS is not built into v1.2.3 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
 
 ## Documentation
 
@@ -138,6 +135,31 @@ Loan records may contain personal and financial information. Secure the WordPres
 Lend Sure is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
 
 ## Changelog
+
+### 1.2.3
+
+- Completed the second WordPress Plugin Check cleanup pass.
+- Corrected translator-comment placement for multiline placeholder strings.
+- Documented cache invalidation on the remaining migration/update database writes.
+- No loan calculation or database schema changes.
+
+### 1.2.2
+
+- WordPress Plugin Check compliance maintenance release.
+- Prepared custom-table identifiers with `%i` placeholders and centralized data access.
+- Added object caching and cache invalidation for custom-table reads.
+- Hardened nonce verification and request sanitization.
+- Corrected output escaping and translation placeholder handling.
+- Cleaned installable package metadata and WordPress.org short description.
+
+
+### 1.2.1
+
+- Hardened email reminder sending and failure logging.
+- Added administrator-selectable Extension Date for retrospective updates.
+- Centered acknowledgement logo with company details beneath it.
+- Treated company/business details as the lender identity on acknowledgement documents.
+- Replaced borrower thumbprint area with a second witness signature area.
 
 ### 1.2.0
 

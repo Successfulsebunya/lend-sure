@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Lend Sure
  * Description: Lightweight personal loan tracking for WordPress with 20% monthly interest, partial payments, extensions, penalties, transaction history, and signed loan acknowledgement records.
- * Version: 1.2.0
+ * Version: 1.2.3
  * Plugin URI: https://github.com/Successfulsebunya/lend-sure
  * Author: Moses Cursor
  * Author URI: https://mosescursor.com
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'LENDSURE_VERSION', '1.2.0' );
+define( 'LENDSURE_VERSION', '1.2.3' );
 define( 'LENDSURE_FILE', __FILE__ );
 define( 'LENDSURE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LENDSURE_URL', plugin_dir_url( __FILE__ ) );

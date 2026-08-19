@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class LendSure_Reminders {
     private static $instance = null;
     const CRON_HOOK = 'lendsure_daily_reminder_digest';
+    private $mail_error = '';
 
     public static function instance() {
         if ( null === self::$instance ) {
@@ -32,14 +33,43 @@ class LendSure_Reminders {
         }
     }
 
+    public function capture_mail_error( $error ) {
+        if ( is_wp_error( $error ) ) {
+            $this->mail_error = $error->get_error_message();
+        }
+    }
+
+    private function send_mail_safely( $to, $subject, $message ) {
+        $this->mail_error = '';
+        add_action( 'wp_mail_failed', array( $this, 'capture_mail_error' ), 10, 1 );
+
+        try {
+            $sent = wp_mail( $to, $subject, $message );
+        } catch ( Throwable $error ) {
+            $sent             = false;
+            $this->mail_error = $error->getMessage();
+        }
+
+        remove_action( 'wp_mail_failed', array( $this, 'capture_mail_error' ), 10 );
+
+        if ( ! $sent && '' === $this->mail_error ) {
+            $this->mail_error = __( 'WordPress mail returned false. Check the site SMTP/mail configuration.', 'lend-sure' );
+        }
+
+        return array(
+            'sent'  => (bool) $sent,
+            'error' => sanitize_text_field( $this->mail_error ),
+        );
+    }
+
     public static function timing_status( $due_date ) {
         $today = new DateTimeImmutable( current_time( 'Y-m-d' ), wp_timezone() );
-        $due = DateTimeImmutable::createFromFormat( '!Y-m-d', $due_date, wp_timezone() );
+        $due   = DateTimeImmutable::createFromFormat( '!Y-m-d', $due_date, wp_timezone() );
         if ( ! $due ) {
             return array( 'key' => 'unknown', 'label' => __( 'Unknown', 'lend-sure' ), 'days' => 0 );
         }
 
-        $days = (int) $today->diff( $due )->format( '%r%a' );
+        $days  = (int) $today->diff( $due )->format( '%r%a' );
         $grace = max( 0, absint( get_option( 'lendsure_grace_days', 3 ) ) );
 
         if ( 0 === $days ) {
@@ -58,26 +88,12 @@ class LendSure_Reminders {
     }
 
     public static function get_due_loans( $limit = 100 ) {
-        global $wpdb;
-        $loans = LendSure_DB::table( 'loans' );
-        $borrowers = LendSure_DB::table( 'borrowers' );
-        return $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT l.*, b.full_name, b.phone, b.email
-                 FROM {$loans} l
-                 INNER JOIN {$borrowers} b ON b.id=l.borrower_id
-                 WHERE l.status='active'
-                 ORDER BY l.due_date ASC
-                 LIMIT %d",
-                max( 1, absint( $limit ) )
-            )
-        );
+        return LendSure_DB::get_due_loans( $limit );
     }
 
     private function log( $loan_id, $type, $recipient, $status, $message = '' ) {
-        global $wpdb;
-        $wpdb->insert(
-            LendSure_DB::table( 'reminders' ),
+        LendSure_DB::insert(
+            'reminders',
             array(
                 'loan_id'    => absint( $loan_id ),
                 'type'       => sanitize_key( $type ),
@@ -101,8 +117,8 @@ class LendSure_Reminders {
         }
 
         $days_before = max( 0, absint( get_option( 'lendsure_reminder_days_before', 3 ) ) );
-        $rows = self::get_due_loans( 250 );
-        $items = array();
+        $rows        = self::get_due_loans( 250 );
+        $items       = array();
 
         foreach ( $rows as $loan ) {
             $timing = self::timing_status( $loan->due_date );
@@ -124,39 +140,47 @@ class LendSure_Reminders {
             return;
         }
 
+        /* translators: %s: current date in YYYY-MM-DD format. */
         $subject = sprintf( __( 'Lend Sure daily due-date summary — %s', 'lend-sure' ), current_time( 'Y-m-d' ) );
         $message = __( "The following active loans need attention:\n\n", 'lend-sure' ) . implode( "\n", $items ) . "\n\n" . admin_url( 'admin.php?page=lendsure-reminders' );
-        $sent = wp_mail( $recipient, $subject, $message );
-        $this->log( 0, 'admin_digest', $recipient, $sent ? 'sent' : 'failed', $message );
+        $result  = $this->send_mail_safely( $recipient, $subject, $message );
+
+        $log_message = $message . ( $result['error'] ? "\n\nMail error: " . $result['error'] : '' );
+        $this->log( 0, 'admin_digest', $recipient, $result['sent'] ? 'sent' : 'failed', $log_message );
     }
 
     public function send_borrower_reminder() {
-        $loan_id = absint( $_POST['loan_id'] ?? 0 );
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'You do not have permission to send reminders.', 'lend-sure' ) );
         }
-        check_admin_referer( 'lendsure_send_borrower_reminder_' . $loan_id );
+        check_admin_referer( 'lendsure_send_borrower_reminder' );
 
-        global $wpdb;
-        $loans = LendSure_DB::table( 'loans' );
-        $borrowers = LendSure_DB::table( 'borrowers' );
-        $loan = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT l.*, b.full_name, b.email FROM {$loans} l INNER JOIN {$borrowers} b ON b.id=l.borrower_id WHERE l.id=%d",
-                $loan_id
-            )
-        );
+        $loan_id = isset( $_POST['loan_id'] ) ? absint( wp_unslash( $_POST['loan_id'] ) ) : 0;
+        $loan    = LendSure_DB::get_loan( $loan_id );
 
         if ( ! $loan || 'active' !== $loan->status || ! is_email( $loan->email ) ) {
             wp_die( esc_html__( 'A valid borrower email is required for this reminder.', 'lend-sure' ) );
         }
 
-        $timing = self::timing_status( $loan->due_date );
+        $timing   = self::timing_status( $loan->due_date );
         $currency = get_option( 'lendsure_currency', 'UGX' );
-        $lender = get_option( 'lendsure_lender_name', get_bloginfo( 'name' ) );
+        $lender   = get_option( 'lendsure_company_name', get_bloginfo( 'name' ) );
+
+        /* translators: %s: loan due date. */
         $subject = sprintf( __( 'Loan reminder — due %s', 'lend-sure' ), $loan->due_date );
+
         $message = sprintf(
-            __( "Hello %1$s,\n\nThis is a reminder regarding your loan with %2$s.\n\nAmount currently due: %3$s %4$s\nDue date: %5$s\nStatus: %6$s\n\nPlease contact the lender if you need to discuss payment or an extension.\n", 'lend-sure' ),
+            /* translators: 1: borrower name, 2: lender/company name, 3: currency, 4: amount due, 5: due date, 6: timing status. */
+            __( 'Hello %1$s,
+
+This is a reminder regarding your loan with %2$s.
+
+Amount currently due: %3$s %4$s
+Due date: %5$s
+Status: %6$s
+
+Please contact the lender if you need to discuss payment or an extension.
+', 'lend-sure' ),
             $loan->full_name,
             $lender,
             $currency,
@@ -165,23 +189,30 @@ class LendSure_Reminders {
             $timing['label']
         );
 
-        $sent = wp_mail( $loan->email, $subject, $message );
-        $this->log( $loan_id, 'borrower_email', $loan->email, $sent ? 'sent' : 'failed', $message );
+        $borrower_result = $this->send_mail_safely( $loan->email, $subject, $message );
+        $sent            = $borrower_result['sent'];
+        $borrower_log    = $message . ( $borrower_result['error'] ? "\n\nMail error: " . $borrower_result['error'] : '' );
+        $this->log( $loan_id, 'borrower_email', $loan->email, $sent ? 'sent' : 'failed', $borrower_log );
 
         $lender_email = sanitize_email( get_option( 'lendsure_reminder_email', get_option( 'admin_email' ) ) );
-        $copy_sent = true;
+        $copy_sent    = true;
         if ( is_email( $lender_email ) && strtolower( $lender_email ) !== strtolower( $loan->email ) ) {
+            /* translators: %s: borrower name. */
             $copy_subject = sprintf( __( 'Copy: loan reminder sent to %s', 'lend-sure' ), $loan->full_name );
-            $copy_message = sprintf(
-                __( "A loan reminder was sent to %1$s (%2$s).
 
-%3$s", 'lend-sure' ),
+            $copy_message = sprintf(
+                /* translators: 1: borrower name, 2: borrower email address, 3: reminder message body. */
+                __( 'A loan reminder was sent to %1$s (%2$s).
+
+%3$s', 'lend-sure' ),
                 $loan->full_name,
                 $loan->email,
                 $message
             );
-            $copy_sent = wp_mail( $lender_email, $copy_subject, $copy_message );
-            $this->log( $loan_id, 'lender_copy_email', $lender_email, $copy_sent ? 'sent' : 'failed', $copy_message );
+            $copy_result = $this->send_mail_safely( $lender_email, $copy_subject, $copy_message );
+            $copy_sent   = $copy_result['sent'];
+            $copy_log    = $copy_message . ( $copy_result['error'] ? "\n\nMail error: " . $copy_result['error'] : '' );
+            $this->log( $loan_id, 'lender_copy_email', $lender_email, $copy_sent ? 'sent' : 'failed', $copy_log );
         }
 
         if ( $sent && $copy_sent ) {
@@ -189,10 +220,19 @@ class LendSure_Reminders {
         } elseif ( $sent ) {
             $notice = __( 'Borrower reminder email sent, but the lender/admin copy could not be sent.', 'lend-sure' );
         } else {
-            $notice = __( 'WordPress could not send the borrower reminder email.', 'lend-sure' );
+            $notice = __( 'WordPress could not send the borrower reminder email. Check the site mail/SMTP configuration.', 'lend-sure' );
+            if ( ! empty( $borrower_result['error'] ) ) {
+                $notice .= ' ' . $borrower_result['error'];
+            }
         }
+
         $url = add_query_arg(
-            array( 'page' => 'lendsure-loans', 'action' => 'view', 'loan_id' => $loan_id, 'ls_notice' => $notice ),
+            array(
+                'page'      => 'lendsure-loans',
+                'action'    => 'view',
+                'loan_id'   => $loan_id,
+                'ls_notice' => $notice,
+            ),
             admin_url( 'admin.php' )
         );
         wp_safe_redirect( $url );

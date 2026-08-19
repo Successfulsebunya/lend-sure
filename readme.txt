@@ -4,11 +4,11 @@ Tags: loans, lending, payments, interest, ledger
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Lightweight loan management for WordPress with borrowers, 20% monthly interest defaults, repayments, extensions, penalties, reminders, and signed acknowledgements.
+Track private loans, borrowers, repayments, interest, penalties, reminders, extensions, and signed acknowledgements in WordPress.
 
 == Description ==
 
@@ -27,12 +27,13 @@ The default monthly interest rate is 20%, but it can be changed in Settings or f
 * Editable one-off penalty when applying a charge.
 * Partial payments allocated in the order: interest, penalty, principal.
 * Loan extensions with optional capitalization of unpaid interest and penalties.
+* Administrator-selectable extension date for retrospective record entry.
 * Customizable acknowledgement header with company/business name, logo, and company details.
 * Loan Acknowledgement & Acceptance containing the agreed interest and penalty terms.
 * One primary Save PDF action for acknowledgement documents using the browser's native PDF output.
 * Upload signed PDF, JPG/JPEG, or PNG acknowledgement copies back to the loan record.
 * Due Today, Due This Week, Grace Period, Overdue, and Upcoming statuses.
-* Manual borrower email reminders with a lender/admin copy.
+* Manual borrower email reminders with a lender/admin copy and safer mail/SMTP failure handling.
 * Optional daily lender/admin due-date digest using WordPress mail and WP-Cron.
 * Reminder activity log.
 * Full payment and transaction history.
@@ -49,7 +50,7 @@ Author: https://mosescursor.com/
 2. Upload the Lend Sure ZIP file and click **Install Now**.
 3. Activate **Lend Sure**.
 4. Open **Lend Sure > Settings**.
-5. Configure currency, default interest, grace period, default penalty, company acknowledgement header, lender/signatory details, and reminder settings.
+5. Configure currency, default interest, grace period, default penalty, company/lender acknowledgement details, and reminder settings.
 6. Go to **Lend Sure > Borrowers** and add a borrower.
 7. Go to **Lend Sure > Loans > Add New** to create the first loan.
 
@@ -65,7 +66,7 @@ Payments are allocated to outstanding interest first, then outstanding penalties
 
 = Can each loan have a different penalty? =
 
-Yes. Version 1.2.0 stores the agreed penalty type and value with each loan. The penalty is included in the acknowledgement terms. When applying a penalty, the administrator can also edit the value for an intentional one-off charge.
+Yes. Version 1.2.3 stores the agreed penalty type and value with each loan. The penalty is included in the acknowledgement terms. When applying a penalty, the administrator can also edit the value for an intentional one-off charge.
 
 = Does Lend Sure automatically add penalties when a loan becomes overdue? =
 
@@ -85,19 +86,43 @@ Borrower reminders and the lender/admin daily digest currently use WordPress `wp
 
 = Does the plugin send SMS? =
 
-Not in version 1.2.0. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
+Not in version 1.2.3. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
 
 == Screenshots ==
 
 1. Lend Sure dashboard with active and due-date summaries.
 2. Borrower management screen.
 3. New loan form with interest and per-loan penalty terms.
-4. Loan detail screen with payment, extension, penalty, reminder, and transaction panels.
-5. Branded Loan Acknowledgement & Acceptance document.
+4. Loan detail screen with payment, dated extension, penalty, reminder, and transaction panels.
+5. Branded Loan Acknowledgement & Acceptance with centered logo and two witness lines.
 6. Reminder follow-up queue.
 7. Settings with company acknowledgement header and reminder configuration.
 
 == Changelog ==
+
+= 1.2.3 =
+* Completed the second WordPress Plugin Check compliance pass.
+* Moved translator comments directly beside the placeholder translation calls flagged by Plugin Check.
+* Documented cache invalidation for the remaining custom-table migration and update writes so Plugin Check no longer reports false-positive NoCaching warnings.
+* No loan calculation or database schema changes.
+
+= 1.2.2 =
+* Improved WordPress Plugin Check compliance.
+* Reworked custom-table queries to use prepared identifier placeholders and object caching.
+* Hardened nonce verification and request sanitization in admin actions.
+* Added missing translator comments and corrected translatable placeholder strings.
+* Improved output escaping across admin screens.
+* Removed hidden development files from the installable WordPress package.
+* Shortened the WordPress.org short description to the supported length.
+* Kept CSV streaming lightweight while removing the unnecessary direct fclose call.
+
+= 1.2.1 =
+* Hardened borrower email reminders so mail/SMTP failures are caught, logged, and shown as admin notices instead of causing a WordPress critical-error screen where possible.
+* Added an Extension Date field for backdated extension records.
+* Extension-related ledger entries now use the actual extension date entered by the administrator.
+* Centered the acknowledgement logo and placed company details directly beneath it.
+* Treated the company/business as the lender identity on the acknowledgement.
+* Replaced the optional borrower thumbprint area with a second witness name/signature area.
 
 = 1.2.0 =
 * Added company/business name, company details, and company logo settings for acknowledgement headers.
@@ -122,6 +147,15 @@ Not in version 1.2.0. SMS requires a live messaging provider and may involve per
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.3 =
+Completes the remaining Plugin Check cleanup from 1.2.2. No loan data migration is required.
+
+= 1.2.2 =
+Improves WordPress Plugin Check compliance and hardens query preparation, nonce handling, escaping, internationalization, and packaging. No loan data migration is required.
+
+= 1.2.1 =
+Improves reminder error handling, adds backdated extension dates, and refines the acknowledgement header and witness section. No loan data migration is required.
 
 = 1.2.0 =
 Adds branded acknowledgement headers and loan-specific penalty terms. Existing loans are retained and receive the configured default penalty values during the database upgrade.
