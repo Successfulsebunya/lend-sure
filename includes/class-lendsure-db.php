@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class LendSure_DB {
-    const DB_VERSION = '1.2.0';
+    const DB_VERSION = '1.3.0';
     const CACHE_GROUP = 'lend_sure';
 
     private static $tables = array(
@@ -169,10 +169,37 @@ class LendSure_DB {
                     $wpdb->prepare(
                         "SELECT COUNT(*) AS active_count,
                             COALESCE(SUM(current_principal), 0) AS principal,
-                            COALESCE(SUM(accrued_interest), 0) AS interest
+                            COALESCE(SUM(accrued_interest), 0) AS interest,
+                            COALESCE(SUM(accrued_penalty), 0) AS penalty,
+                            COALESCE(SUM(current_principal + accrued_interest + accrued_penalty), 0) AS expected_total
                         FROM %i
                         WHERE status = 'active'",
                         $loans
+                    )
+                );
+            }
+        );
+    }
+
+    public static function get_borrower( $borrower_id ) {
+        global $wpdb;
+
+        $borrower_id = absint( $borrower_id );
+        if ( ! $borrower_id ) {
+            return null;
+        }
+
+        $borrowers = self::table( 'borrowers' );
+
+        return self::cached_query(
+            'borrower_' . $borrower_id,
+            static function () use ( $wpdb, $borrowers, $borrower_id ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading a plugin-owned custom table; result is object-cached.
+                return $wpdb->get_row(
+                    $wpdb->prepare(
+                        'SELECT * FROM %i WHERE id = %d',
+                        $borrowers,
+                        $borrower_id
                     )
                 );
             }
@@ -293,6 +320,76 @@ class LendSure_DB {
         );
     }
 
+    public static function get_monthly_performance( $months = 12 ) {
+        global $wpdb;
+
+        $months = min( 24, max( 3, absint( $months ) ) );
+        $tz     = wp_timezone();
+        $now    = new DateTimeImmutable( 'now', $tz );
+        $start  = $now->modify( 'first day of this month' )->modify( '-' . ( $months - 1 ) . ' months' );
+
+        $loans    = self::table( 'loans' );
+        $payments = self::table( 'payments' );
+
+        $cache_key = 'monthly_performance_' . $months . '_' . $start->format( 'Y-m' );
+
+        return self::cached_query(
+            $cache_key,
+            static function () use ( $wpdb, $loans, $payments, $months, $start, $tz ) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading plugin-owned custom tables; result is object-cached.
+                $loan_rows = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT DATE_FORMAT(start_date, '%%Y-%%m') AS month_key,
+                            COUNT(*) AS loans_count,
+                            COALESCE(SUM(original_principal), 0) AS principal_issued
+                        FROM %i
+                        WHERE start_date >= %s
+                        GROUP BY DATE_FORMAT(start_date, '%%Y-%%m')
+                        ORDER BY month_key ASC",
+                        $loans,
+                        $start->format( 'Y-m-d' )
+                    ),
+                    OBJECT_K
+                );
+
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reading plugin-owned custom tables; result is object-cached.
+                $payment_rows = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT DATE_FORMAT(payment_date, '%%Y-%%m') AS month_key,
+                            COALESCE(SUM(amount), 0) AS repayments_collected,
+                            COALESCE(SUM(interest_component + penalty_component), 0) AS income_collected
+                        FROM %i
+                        WHERE payment_date >= %s
+                        GROUP BY DATE_FORMAT(payment_date, '%%Y-%%m')
+                        ORDER BY month_key ASC",
+                        $payments,
+                        $start->format( 'Y-m-d' )
+                    ),
+                    OBJECT_K
+                );
+
+                $series = array();
+                for ( $i = 0; $i < $months; $i++ ) {
+                    $month     = $start->modify( '+' . $i . ' months' );
+                    $month_key = $month->format( 'Y-m' );
+                    $issued    = isset( $loan_rows[ $month_key ] ) ? $loan_rows[ $month_key ] : null;
+                    $received  = isset( $payment_rows[ $month_key ] ) ? $payment_rows[ $month_key ] : null;
+
+                    $series[] = array(
+                        'month_key'            => $month_key,
+                        'label'                => wp_date( 'M Y', $month->getTimestamp(), $tz ),
+                        'loans_count'          => $issued ? (int) $issued->loans_count : 0,
+                        'principal_issued'     => $issued ? (float) $issued->principal_issued : 0.0,
+                        'repayments_collected' => $received ? (float) $received->repayments_collected : 0.0,
+                        'income_collected'     => $received ? (float) $received->income_collected : 0.0,
+                    );
+                }
+
+                return $series;
+            }
+        );
+    }
+
     public static function get_export_loans() {
         global $wpdb;
 
@@ -375,6 +472,7 @@ class LendSure_DB {
             national_id varchar(120) DEFAULT '',
             notes text NULL,
             created_at datetime NOT NULL,
+            updated_at datetime NULL,
             PRIMARY KEY  (id),
             KEY full_name (full_name)
         ) {$charset};";

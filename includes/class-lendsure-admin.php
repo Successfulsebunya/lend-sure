@@ -18,6 +18,7 @@ class LendSure_Admin {
         add_action( 'admin_enqueue_scripts', array( $this, 'assets' ) );
 
         add_action( 'admin_post_lendsure_add_borrower', array( $this, 'add_borrower' ) );
+        add_action( 'admin_post_lendsure_update_borrower', array( $this, 'update_borrower' ) );
         add_action( 'admin_post_lendsure_add_loan', array( $this, 'add_loan' ) );
         add_action( 'admin_post_lendsure_add_payment', array( $this, 'add_payment' ) );
         add_action( 'admin_post_lendsure_extend_loan', array( $this, 'extend_loan' ) );
@@ -121,16 +122,19 @@ class LendSure_Admin {
     }
 
     public function dashboard_page() {
-        $totals       = LendSure_DB::get_dashboard_totals();
-        $active_count = $totals ? (int) $totals->active_count : 0;
-        $principal    = $totals ? (float) $totals->principal : 0.0;
-        $interest     = $totals ? (float) $totals->interest : 0.0;
-        $due          = LendSure_DB::get_due_loans( 100 );
+        $totals         = LendSure_DB::get_dashboard_totals();
+        $active_count   = $totals ? (int) $totals->active_count : 0;
+        $principal      = $totals ? (float) $totals->principal : 0.0;
+        $interest       = $totals ? (float) $totals->interest : 0.0;
+        $penalty        = $totals ? (float) $totals->penalty : 0.0;
+        $expected_total = $totals ? (float) $totals->expected_total : 0.0;
+        $due            = LendSure_DB::get_due_loans( 100 );
+        $performance    = LendSure_DB::get_monthly_performance( 12 );
 
         $due_today = 0.0;
-        $due_week = 0.0;
-        $grace = 0.0;
-        $overdue = 0.0;
+        $due_week  = 0.0;
+        $grace     = 0.0;
+        $overdue   = 0.0;
         foreach ( $due as $loan ) {
             $timing = LendSure_Reminders::timing_status( $loan->due_date );
             $amount = LendSure_Calculator::total_due( $loan );
@@ -144,22 +148,31 @@ class LendSure_Admin {
                 $overdue += $amount;
             }
         }
+
+        $max_issued = 0.0;
+        $max_income = 0.0;
+        foreach ( $performance as $point ) {
+            $max_issued = max( $max_issued, (float) $point['principal_issued'] );
+            $max_income = max( $max_income, (float) $point['income_collected'] );
+        }
         ?>
         <div class="wrap lendsure-wrap">
             <h1><?php esc_html_e( 'Lend Sure', 'lend-sure' ); ?></h1>
             <?php $this->notice(); ?>
-            <div class="ls-cards">
+
+            <div class="ls-cards ls-cards-5">
                 <div class="ls-card"><span><?php esc_html_e( 'Active Loans', 'lend-sure' ); ?></span><strong><?php echo esc_html( $active_count ); ?></strong></div>
                 <div class="ls-card"><span><?php esc_html_e( 'Outstanding Principal', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $principal ) ); ?></strong></div>
                 <div class="ls-card"><span><?php esc_html_e( 'Outstanding Interest', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $interest ) ); ?></strong></div>
-                <div class="ls-card ls-card-danger"><span><?php esc_html_e( 'Overdue', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $overdue ) ); ?></strong></div>
+                <div class="ls-card"><span><?php esc_html_e( 'Outstanding Penalties', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $penalty ) ); ?></strong></div>
+                <div class="ls-card ls-card-highlight"><span><?php esc_html_e( 'Total Expected Amount', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $expected_total ) ); ?></strong></div>
             </div>
 
-            <div class="ls-cards ls-cards-secondary">
+            <div class="ls-cards">
                 <div class="ls-card ls-card-warning"><span><?php esc_html_e( 'Due Today', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $due_today ) ); ?></strong></div>
                 <div class="ls-card"><span><?php esc_html_e( 'Due This Week', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $due_week ) ); ?></strong></div>
                 <div class="ls-card ls-card-grace"><span><?php esc_html_e( 'In Grace Period', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $grace ) ); ?></strong></div>
-                <div class="ls-card"><span><?php esc_html_e( 'Reminder Window', 'lend-sure' ); ?></span><strong><?php echo esc_html( absint( get_option( 'lendsure_reminder_days_before', 3 ) ) . ' days' ); ?></strong></div>
+                <div class="ls-card ls-card-danger"><span><?php esc_html_e( 'Overdue', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $overdue ) ); ?></strong></div>
             </div>
 
             <div class="ls-toolbar">
@@ -167,6 +180,35 @@ class LendSure_Admin {
                 <a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-borrowers&action=new' ) ); ?>"><?php esc_html_e( 'Add Borrower', 'lend-sure' ); ?></a>
                 <a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-reminders' ) ); ?>"><?php esc_html_e( 'Open Reminders', 'lend-sure' ); ?></a>
             </div>
+
+            <section class="ls-panel ls-analytics-panel">
+                <div class="ls-panel-heading">
+                    <div>
+                        <h2><?php esc_html_e( '12-Month Lending Performance', 'lend-sure' ); ?></h2>
+                        <p class="description"><?php esc_html_e( 'Loan volume shows principal issued. Lending income shows interest and penalties actually collected; it is not accounting profit.', 'lend-sure' ); ?></p>
+                    </div>
+                </div>
+                <div class="ls-chart-legend">
+                    <span><i class="ls-legend-swatch ls-legend-issued"></i><?php esc_html_e( 'Principal issued', 'lend-sure' ); ?></span>
+                    <span><i class="ls-legend-swatch ls-legend-income"></i><?php esc_html_e( 'Lending income collected', 'lend-sure' ); ?></span>
+                </div>
+                <div class="ls-performance-chart" role="img" aria-label="<?php esc_attr_e( 'Monthly lending performance for the last 12 months', 'lend-sure' ); ?>">
+                    <?php foreach ( $performance as $point ) :
+                        $issued_height = $max_issued > 0 ? max( 2, round( ( (float) $point['principal_issued'] / $max_issued ) * 100, 1 ) ) : 0;
+                        $income_height = $max_income > 0 ? max( 2, round( ( (float) $point['income_collected'] / $max_income ) * 100, 1 ) ) : 0;
+                        ?>
+                        <div class="ls-chart-month">
+                            <div class="ls-chart-bars">
+                                <div class="ls-chart-bar ls-chart-issued" style="<?php echo esc_attr( '--ls-bar-height:' . $issued_height . '%' ); ?>" title="<?php echo esc_attr( $this->money( $point['principal_issued'] ) ); ?>"></div>
+                                <div class="ls-chart-bar ls-chart-income" style="<?php echo esc_attr( '--ls-bar-height:' . $income_height . '%' ); ?>" title="<?php echo esc_attr( $this->money( $point['income_collected'] ) ); ?>"></div>
+                            </div>
+                            <span class="ls-chart-label"><?php echo esc_html( $point['label'] ); ?></span>
+                            <small><strong><?php echo esc_html( (int) $point['loans_count'] ); ?></strong> <?php echo esc_html( _n( 'loan', 'loans', (int) $point['loans_count'], 'lend-sure' ) ); ?></small>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <p class="description"><?php esc_html_e( 'Each bar series is scaled to its own highest month so the chart emphasizes direction and trend. Use the loan register and payment records for exact monetary comparisons.', 'lend-sure' ); ?></p>
+            </section>
 
             <h2><?php esc_html_e( 'Due-Date Workflow', 'lend-sure' ); ?></h2>
             <table class="widefat striped">
@@ -194,8 +236,20 @@ class LendSure_Admin {
     public function borrowers_page() {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin navigation parameter; no state change occurs.
         $action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+
         if ( 'new' === $action ) {
             $this->borrower_form();
+            return;
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin navigation parameter; no state change occurs.
+        $borrower_id = isset( $_GET['borrower_id'] ) ? absint( wp_unslash( $_GET['borrower_id'] ) ) : 0;
+        if ( 'edit' === $action && $borrower_id ) {
+            $borrower = LendSure_DB::get_borrower( $borrower_id );
+            if ( ! $borrower ) {
+                wp_die( esc_html__( 'Borrower not found.', 'lend-sure' ) );
+            }
+            $this->borrower_form( $borrower );
             return;
         }
 
@@ -206,11 +260,17 @@ class LendSure_Admin {
             <a class="page-title-action" href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-borrowers&action=new' ) ); ?>"><?php esc_html_e( 'Add New', 'lend-sure' ); ?></a>
             <?php $this->notice(); ?>
             <table class="widefat striped ls-table-margin">
-                <thead><tr><th><?php esc_html_e( 'Name', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Phone', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Email', 'lend-sure' ); ?></th><th><?php esc_html_e( 'National ID', 'lend-sure' ); ?></th></tr></thead>
+                <thead><tr><th><?php esc_html_e( 'Name', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Phone', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Email', 'lend-sure' ); ?></th><th><?php esc_html_e( 'National ID', 'lend-sure' ); ?></th><th><?php esc_html_e( 'Actions', 'lend-sure' ); ?></th></tr></thead>
                 <tbody>
-                <?php if ( ! $rows ) : ?><tr><td colspan="4"><?php esc_html_e( 'No borrowers yet.', 'lend-sure' ); ?></td></tr>
+                <?php if ( ! $rows ) : ?><tr><td colspan="5"><?php esc_html_e( 'No borrowers yet.', 'lend-sure' ); ?></td></tr>
                 <?php else : foreach ( $rows as $row ) : ?>
-                    <tr><td><?php echo esc_html( $row->full_name ); ?></td><td><?php echo esc_html( $row->phone ); ?></td><td><?php echo esc_html( $row->email ); ?></td><td><?php echo esc_html( $row->national_id ); ?></td></tr>
+                    <tr>
+                        <td><?php echo esc_html( $row->full_name ); ?></td>
+                        <td><?php echo esc_html( $row->phone ); ?></td>
+                        <td><?php echo esc_html( $row->email ); ?></td>
+                        <td><?php echo esc_html( $row->national_id ); ?></td>
+                        <td><a href="<?php echo esc_url( admin_url( 'admin.php?page=lendsure-borrowers&action=edit&borrower_id=' . (int) $row->id ) ); ?>"><?php esc_html_e( 'Edit', 'lend-sure' ); ?></a></td>
+                    </tr>
                 <?php endforeach; endif; ?>
                 </tbody>
             </table>
@@ -218,20 +278,36 @@ class LendSure_Admin {
         <?php
     }
 
-    private function borrower_form() {
+    private function borrower_form( $borrower = null ) {
+        $is_edit = ! empty( $borrower );
+        $title   = $is_edit ? __( 'Edit Borrower', 'lend-sure' ) : __( 'Add Borrower', 'lend-sure' );
+        $action  = $is_edit ? 'lendsure_update_borrower' : 'lendsure_add_borrower';
+        $nonce   = $is_edit ? 'lendsure_update_borrower' : 'lendsure_add_borrower';
+
+        $full_name   = $is_edit ? $borrower->full_name : '';
+        $phone       = $is_edit ? $borrower->phone : '';
+        $email       = $is_edit ? $borrower->email : '';
+        $address     = $is_edit ? $borrower->address : '';
+        $national_id = $is_edit ? $borrower->national_id : '';
+        $notes       = $is_edit ? $borrower->notes : '';
         ?>
         <div class="wrap lendsure-wrap">
-            <h1><?php esc_html_e( 'Add Borrower', 'lend-sure' ); ?></h1>
+            <h1><?php echo esc_html( $title ); ?></h1>
+            <?php $this->notice(); ?>
+            <?php if ( $is_edit ) : ?>
+                <p class="description"><?php esc_html_e( 'Changes apply to this borrower record and will appear in future generated loan documents. Previously uploaded signed acknowledgements remain unchanged.', 'lend-sure' ); ?></p>
+            <?php endif; ?>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ls-form-card">
-                <input type="hidden" name="action" value="lendsure_add_borrower">
-                <?php wp_nonce_field( 'lendsure_add_borrower' ); ?>
-                <p><label><?php esc_html_e( 'Full Name', 'lend-sure' ); ?><input required name="full_name" type="text" class="regular-text"></label></p>
-                <p><label><?php esc_html_e( 'Phone', 'lend-sure' ); ?><input name="phone" type="text" class="regular-text"></label></p>
-                <p><label><?php esc_html_e( 'Email', 'lend-sure' ); ?><input name="email" type="email" class="regular-text"></label></p>
-                <p><label><?php esc_html_e( 'Address', 'lend-sure' ); ?><textarea name="address" rows="3" class="large-text"></textarea></label></p>
-                <p><label><?php esc_html_e( 'National ID / Identification', 'lend-sure' ); ?><input name="national_id" type="text" class="regular-text"></label></p>
-                <p><label><?php esc_html_e( 'Notes', 'lend-sure' ); ?><textarea name="notes" rows="3" class="large-text"></textarea></label></p>
-                <?php submit_button( __( 'Save Borrower', 'lend-sure' ) ); ?>
+                <input type="hidden" name="action" value="<?php echo esc_attr( $action ); ?>">
+                <?php if ( $is_edit ) : ?><input type="hidden" name="borrower_id" value="<?php echo esc_attr( $borrower->id ); ?>"><?php endif; ?>
+                <?php wp_nonce_field( $nonce ); ?>
+                <p><label><?php esc_html_e( 'Full Name', 'lend-sure' ); ?><input required name="full_name" type="text" class="regular-text" value="<?php echo esc_attr( $full_name ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Phone', 'lend-sure' ); ?><input name="phone" type="text" class="regular-text" value="<?php echo esc_attr( $phone ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Email', 'lend-sure' ); ?><input name="email" type="email" class="regular-text" value="<?php echo esc_attr( $email ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Address', 'lend-sure' ); ?><textarea name="address" rows="3" class="large-text"><?php echo esc_textarea( $address ); ?></textarea></label></p>
+                <p><label><?php esc_html_e( 'National ID / Identification', 'lend-sure' ); ?><input name="national_id" type="text" class="regular-text" value="<?php echo esc_attr( $national_id ); ?>"></label></p>
+                <p><label><?php esc_html_e( 'Notes', 'lend-sure' ); ?><textarea name="notes" rows="3" class="large-text"><?php echo esc_textarea( $notes ); ?></textarea></label></p>
+                <?php submit_button( $is_edit ? __( 'Update Borrower', 'lend-sure' ) : __( 'Save Borrower', 'lend-sure' ) ); ?>
             </form>
         </div>
         <?php
@@ -252,6 +328,24 @@ class LendSure_Admin {
         }
 
         $rows = LendSure_DB::get_loans();
+
+        $register_totals = array(
+            'count'                 => 0,
+            'original_principal'    => 0.0,
+            'outstanding_principal' => 0.0,
+            'interest_due'          => 0.0,
+            'penalty_due'           => 0.0,
+            'total_due'             => 0.0,
+        );
+
+        foreach ( $rows as $loan ) {
+            $register_totals['count']++;
+            $register_totals['original_principal']    += (float) $loan->original_principal;
+            $register_totals['outstanding_principal'] += (float) $loan->current_principal;
+            $register_totals['interest_due']          += (float) $loan->accrued_interest;
+            $register_totals['penalty_due']           += (float) $loan->accrued_penalty;
+            $register_totals['total_due']             += LendSure_Calculator::total_due( $loan );
+        }
         ?>
         <div class="wrap lendsure-wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e( 'Loans', 'lend-sure' ); ?></h1>
@@ -278,6 +372,19 @@ class LendSure_Admin {
                 <?php endforeach; endif; ?>
                 </tbody>
             </table>
+
+            <section class="ls-panel ls-register-totals">
+                <h2><?php esc_html_e( 'Loan Register Totals', 'lend-sure' ); ?></h2>
+                <div class="ls-cards ls-cards-3">
+                    <div class="ls-card"><span><?php esc_html_e( 'Loans Listed', 'lend-sure' ); ?></span><strong><?php echo esc_html( $register_totals['count'] ); ?></strong></div>
+                    <div class="ls-card"><span><?php esc_html_e( 'Original Principal Issued', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $register_totals['original_principal'] ) ); ?></strong></div>
+                    <div class="ls-card"><span><?php esc_html_e( 'Outstanding Principal', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $register_totals['outstanding_principal'] ) ); ?></strong></div>
+                    <div class="ls-card"><span><?php esc_html_e( 'Interest Due', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $register_totals['interest_due'] ) ); ?></strong></div>
+                    <div class="ls-card"><span><?php esc_html_e( 'Penalties Due', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $register_totals['penalty_due'] ) ); ?></strong></div>
+                    <div class="ls-card ls-card-highlight"><span><?php esc_html_e( 'Current Total Expected', 'lend-sure' ); ?></span><strong><?php echo esc_html( $this->money( $register_totals['total_due'] ) ); ?></strong></div>
+                </div>
+                <p class="description"><?php esc_html_e( 'Original Principal Issued includes historical loans. Current totals reflect the balances still stored on the loan register.', 'lend-sure' ); ?></p>
+            </section>
         </div>
         <?php
     }
@@ -582,10 +689,54 @@ class LendSure_Admin {
                 'national_id' => isset( $_POST['national_id'] ) ? sanitize_text_field( wp_unslash( $_POST['national_id'] ) ) : '',
                 'notes'       => isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '',
                 'created_at'  => $this->now(),
+                'updated_at'  => $this->now(),
             ),
-            array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+            array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
         );
         $this->redirect( 'lendsure-borrowers', array( 'ls_notice' => __( 'Borrower saved.', 'lend-sure' ) ) );
+    }
+
+    public function update_borrower() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You do not have permission to perform this action.', 'lend-sure' ) );
+        }
+        check_admin_referer( 'lendsure_update_borrower' );
+
+        $borrower_id = isset( $_POST['borrower_id'] ) ? absint( wp_unslash( $_POST['borrower_id'] ) ) : 0;
+        $name        = isset( $_POST['full_name'] ) ? sanitize_text_field( wp_unslash( $_POST['full_name'] ) ) : '';
+
+        if ( ! $borrower_id || '' === $name || ! LendSure_DB::get_borrower( $borrower_id ) ) {
+            wp_die( esc_html__( 'A valid borrower and borrower name are required.', 'lend-sure' ) );
+        }
+
+        $updated = LendSure_DB::update(
+            'borrowers',
+            array(
+                'full_name'   => $name,
+                'phone'       => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '',
+                'email'       => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '',
+                'address'     => isset( $_POST['address'] ) ? sanitize_textarea_field( wp_unslash( $_POST['address'] ) ) : '',
+                'national_id' => isset( $_POST['national_id'] ) ? sanitize_text_field( wp_unslash( $_POST['national_id'] ) ) : '',
+                'notes'       => isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '',
+                'updated_at'  => $this->now(),
+            ),
+            array( 'id' => $borrower_id ),
+            array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
+            array( '%d' )
+        );
+
+        if ( false === $updated ) {
+            wp_die( esc_html__( 'The borrower could not be updated.', 'lend-sure' ) );
+        }
+
+        $this->redirect(
+            'lendsure-borrowers',
+            array(
+                'action'      => 'edit',
+                'borrower_id' => $borrower_id,
+                'ls_notice'   => __( 'Borrower details updated.', 'lend-sure' ),
+            )
+        );
     }
 
     public function add_loan() {

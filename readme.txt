@@ -4,7 +4,7 @@ Tags: loans, lending, payments, interest, ledger
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.3
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,7 @@ The default monthly interest rate is 20%, but it can be changed in Settings or f
 = Core features =
 
 * Borrower records with contact and identification details.
+* Editable borrower records for correcting or updating borrower details.
 * Loan creation with automatic first-month interest.
 * Default 20% monthly interest, configurable per loan.
 * Per-loan late penalty terms: percentage or fixed amount.
@@ -37,6 +38,9 @@ The default monthly interest rate is 20%, but it can be changed in Settings or f
 * Optional daily lender/admin due-date digest using WordPress mail and WP-Cron.
 * Reminder activity log.
 * Full payment and transaction history.
+* Dashboard Total Expected Amount across active loans.
+* Loan Register Totals beneath the Loans table.
+* Dependency-free 12-month performance chart for principal issued and lending income collected.
 * CSV export of the loan register.
 * Dedicated custom database tables for loan data.
 
@@ -66,7 +70,7 @@ Payments are allocated to outstanding interest first, then outstanding penalties
 
 = Can each loan have a different penalty? =
 
-Yes. Version 1.2.3 stores the agreed penalty type and value with each loan. The penalty is included in the acknowledgement terms. When applying a penalty, the administrator can also edit the value for an intentional one-off charge.
+Yes. Version 1.3.0 stores the agreed penalty type and value with each loan. The penalty is included in the acknowledgement terms. When applying a penalty, the administrator can also edit the value for an intentional one-off charge.
 
 = Does Lend Sure automatically add penalties when a loan becomes overdue? =
 
@@ -86,7 +90,7 @@ Borrower reminders and the lender/admin daily digest currently use WordPress `wp
 
 = Does the plugin send SMS? =
 
-Not in version 1.2.3. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
+Not in version 1.3.0. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
 
 == Screenshots ==
 
@@ -99,6 +103,15 @@ Not in version 1.2.3. SMS requires a live messaging provider and may involve per
 7. Settings with company acknowledgement header and reminder configuration.
 
 == Changelog ==
+
+= 1.3.0 =
+* Added Edit Borrower workflow for correcting incomplete or changed borrower details.
+* Added borrower updated-at tracking.
+* Added Total Expected Amount to the dashboard.
+* Added Loan Register Totals beneath the Loans table.
+* Added a lightweight dependency-free 12-month performance chart for principal issued and lending income collected.
+* Clarified that lending income is not accounting profit because operating expenses, taxes, and write-offs are not tracked.
+* Bumped the custom database schema to version 1.3.0.
 
 = 1.2.3 =
 * Completed the second WordPress Plugin Check compliance pass.
@@ -147,6 +160,9 @@ Not in version 1.2.3. SMS requires a live messaging provider and may involve per
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Adds borrower editing, dashboard/loan totals, and 12-month lending performance analytics. The database upgrade adds borrower update tracking automatically.
 
 = 1.2.3 =
 Completes the remaining Plugin Check cleanup from 1.2.2. No loan data migration is required.

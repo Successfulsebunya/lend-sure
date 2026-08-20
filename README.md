@@ -2,7 +2,7 @@
 
 **Lend Sure** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, signed acknowledgements, due dates, reminders, and transaction history from the WordPress dashboard.
 
-- **Version:** 1.2.3
+- **Version:** 1.3.0
 - **Default interest:** 20% per month, configurable
 - **WordPress:** 6.4+
 - **PHP:** 7.4+
@@ -14,6 +14,7 @@
 ## Features
 
 - Borrower records with contact and identification details.
+- Editable borrower profiles for correcting incomplete information or updating changed contact/identification details.
 - Loan creation with automatic first-month interest.
 - Configurable monthly interest per loan.
 - Per-loan late penalty terms: fixed amount or percentage of outstanding principal.
@@ -30,6 +31,9 @@
 - Optional daily admin/lender due-date digest through `wp_mail()` and WP-Cron.
 - Reminder activity logging.
 - Payment and transaction history.
+- Dashboard **Total Expected Amount** across active loans.
+- Loan-register totals for principal issued, outstanding balances, interest, penalties, and expected amount.
+- Dependency-free 12-month performance chart showing loan volume and lending income collected.
 - CSV export.
 - Dedicated database tables rather than custom posts.
 
@@ -81,7 +85,7 @@ These are captured when the loan is created and displayed in the acknowledgement
 
 ## Loan Acknowledgements
 
-Version 1.2.3 retains the business header and acknowledgement workflow. Under **Lend Sure → Settings**, you can configure:
+Version 1.3.0 retains the business header and acknowledgement workflow. Under **Lend Sure → Settings**, you can configure:
 
 - Company / Business Name
 - Company Logo
@@ -102,13 +106,13 @@ This keeps the plugin lightweight by avoiding a large bundled PDF-rendering libr
 
 ## Reminders
 
-Version 1.2.3 retains the reminder workflow and hardened mail failure handling:
+Version 1.3.0 retains the reminder workflow and hardened mail failure handling:
 
 - borrower reminders are sent manually via WordPress `wp_mail()` and a lender/admin copy is sent to the configured digest email;
 - an optional daily lender/admin digest is scheduled using WP-Cron;
 - reminder attempts are logged.
 
-SMS is not built into v1.2.3 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
+SMS is not built into v1.3.0 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
 
 ## Documentation
 
@@ -135,6 +139,16 @@ Loan records may contain personal and financial information. Secure the WordPres
 Lend Sure is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
 
 ## Changelog
+
+### 1.3.0
+
+- Added borrower editing with secure update handling.
+- Added borrower `updated_at` tracking.
+- Added Total Expected Amount to the dashboard.
+- Added Loan Register Totals beneath the Loans table.
+- Added a dependency-free 12-month performance chart for principal issued and lending income collected.
+- Clarified that lending income is interest and penalties collected, not accounting profit.
+- Bumped the database schema to 1.3.0.
 
 ### 1.2.3
 

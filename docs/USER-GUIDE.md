@@ -81,7 +81,7 @@ Click **Save Settings** after making changes.
 
 Open **Lend Sure → Dashboard**.
 
-The Dashboard gives a quick summary of the lending position.
+The Dashboard gives a quick summary of the current lending position and a 12-month view of lending activity.
 
 ### Dashboard Cards
 
@@ -94,8 +94,40 @@ Shows the total remaining principal across active loans.
 #### Outstanding Interest
 Shows the total currently accrued interest across active loans.
 
-#### Overdue
-Shows the total amount due on active loans whose due dates have passed.
+#### Outstanding Penalties
+Shows penalties that have been applied and remain unpaid.
+
+#### Total Expected Amount
+Shows the total amount currently expected from all active loans:
+
+**Outstanding Principal + Outstanding Interest + Outstanding Penalties**
+
+This is the current receivable amount, not a forecast of future extensions or interest that has not yet been charged.
+
+### Due-Date Cards
+
+The dashboard also summarizes:
+
+- **Due Today**
+- **Due This Week**
+- **In Grace Period**
+- **Overdue**
+
+### 12-Month Lending Performance
+
+Version 1.3.0 adds a lightweight performance chart covering the most recent 12 months.
+
+It shows:
+
+- **Principal issued** — the original principal of loans started in each month.
+- **Lending income collected** — interest and penalties actually received through recorded payments.
+- **Number of loans** issued in each month.
+
+The graph is intended to help identify growth or decline in lending activity and collected lending income.
+
+> **Important:** Lending income is not the same as accounting profit. Lend Sure does not currently deduct operating expenses, bad-debt write-offs, taxes, staff costs, or other business expenses.
+
+Each bar series is scaled to its own highest month to emphasize the direction of the trend. Use the Loans and Payments records for exact monetary comparisons.
 
 ### Due-Date Workflow Table
 
@@ -107,8 +139,6 @@ This table lists active loans ordered by due date. It shows:
 - Status
 - Open link
 
-A loan whose due date has passed is marked **Overdue**.
-
 Use **Open** to go directly to the full loan record.
 
 ### Quick Actions
@@ -117,6 +147,7 @@ The Dashboard includes buttons for:
 
 - **Add Loan**
 - **Add Borrower**
+- **Open Reminders**
 
 ---
 
@@ -141,6 +172,20 @@ Available fields are:
 - **National ID / Identification** — identification reference.
 - **Notes** — any useful administrative notes.
 
+### Editing a Borrower
+
+Version 1.3.0 allows the administrator to correct or update borrower information.
+
+1. Go to **Lend Sure → Borrowers**.
+2. Find the borrower.
+3. Click **Edit**.
+4. Correct or complete the required information.
+5. Click **Update Borrower**.
+
+This is useful when a borrower initially provided incomplete details or later changes their phone number, email, address, identification information, or other notes.
+
+Updated borrower data is used when Lend Sure generates future loan documents. Any signed acknowledgement file that was already uploaded remains unchanged and continues to serve as the historical signed record.
+
 ### Borrower List
 
 The Borrowers screen displays:
@@ -149,6 +194,7 @@ The Borrowers screen displays:
 - Phone
 - Email
 - National ID
+- Edit action
 
 A borrower must exist before a loan can be created for them.
 
@@ -169,6 +215,19 @@ The Loans screen is the main loan register. It displays:
 - Status
 
 Click **Open** on a loan to manage it.
+
+### Loan Register Totals
+
+At the bottom of the Loans screen, version 1.3.0 shows:
+
+- **Loans Listed**
+- **Original Principal Issued**
+- **Outstanding Principal**
+- **Interest Due**
+- **Penalties Due**
+- **Current Total Expected**
+
+**Original Principal Issued** includes historical loans in the register, while the outstanding and expected totals reflect the remaining balances stored on those loan records.
 
 ### Creating a New Loan
 
@@ -776,3 +835,19 @@ Version 1.2.2 is a maintenance release focused on WordPress security, internatio
 ## Version 1.2.3 compliance update
 
 Version 1.2.3 completes the remaining items reported by the second WordPress Plugin Check scan after version 1.2.2. It adjusts translator-comment placement and documents cache invalidation for two intentional custom-table write operations. There are no changes to loan calculations, repayment allocation, penalties, extensions, acknowledgements, or reminder behavior.
+
+
+---
+
+## Version 1.3.0 feature update
+
+Version 1.3.0 adds operational reporting and borrower maintenance without changing the core repayment calculation rules.
+
+New administrator capabilities:
+
+- edit borrower records after creation;
+- see **Total Expected Amount** directly on the Dashboard;
+- review totals at the bottom of the Loans register;
+- view a 12-month lending-performance graph for principal issued and lending income collected.
+
+The performance graph does not claim to calculate company accounting profit. A future accounting module could add expenses, write-offs, and other costs if required.
