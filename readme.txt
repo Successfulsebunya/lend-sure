@@ -1,10 +1,10 @@
-=== Lend Sure ===
-Contributors: mocursor
+=== Your Loan Ledger ===
+Contributors: mosescursor
 Tags: loans, lending, payments, interest, ledger
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Track private loans, borrowers, repayments, interest, penalties, reminders, exte
 
 == Description ==
 
-Lend Sure is a lightweight WordPress dashboard plugin for administrators who need to manage private loans without running a separate loan-management application.
+Your Loan Ledger is a lightweight WordPress dashboard plugin for administrators who need to manage private loans without running a separate loan-management application.
 
 It provides a clear loan ledger for borrowers, principal, monthly interest, due dates, partial repayments, extensions, late penalties, signed loan acknowledgements, due-date reminders, and transaction history.
 
@@ -51,12 +51,12 @@ Author: https://mosescursor.com/
 == Installation ==
 
 1. In WordPress, go to **Plugins > Add New > Upload Plugin**.
-2. Upload the Lend Sure ZIP file and click **Install Now**.
-3. Activate **Lend Sure**.
-4. Open **Lend Sure > Settings**.
+2. Upload the Your Loan Ledger ZIP file and click **Install Now**.
+3. Activate **Your Loan Ledger**.
+4. Open **Your Loan Ledger > Settings**.
 5. Configure currency, default interest, grace period, default penalty, company/lender acknowledgement details, and reminder settings.
-6. Go to **Lend Sure > Borrowers** and add a borrower.
-7. Go to **Lend Sure > Loans > Add New** to create the first loan.
+6. Go to **Your Loan Ledger > Borrowers** and add a borrower.
+7. Go to **Your Loan Ledger > Loans > Add New** to create the first loan.
 
 == Frequently Asked Questions ==
 
@@ -72,7 +72,7 @@ Payments are allocated to outstanding interest first, then outstanding penalties
 
 Yes. Version 1.3.0 stores the agreed penalty type and value with each loan. The penalty is included in the acknowledgement terms. When applying a penalty, the administrator can also edit the value for an intentional one-off charge.
 
-= Does Lend Sure automatically add penalties when a loan becomes overdue? =
+= Does Your Loan Ledger automatically add penalties when a loan becomes overdue? =
 
 No. Timing statuses are automatic, but penalty application remains an administrator-controlled action.
 
@@ -90,11 +90,11 @@ Borrower reminders and the lender/admin daily digest currently use WordPress `wp
 
 = Does the plugin send SMS? =
 
-Not in version 1.3.0. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
+Not in version 1.3.1. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
 
 == Screenshots ==
 
-1. Lend Sure dashboard with active and due-date summaries.
+1. Your Loan Ledger dashboard with active and due-date summaries.
 2. Borrower management screen.
 3. New loan form with interest and per-loan penalty terms.
 4. Loan detail screen with payment, dated extension, penalty, reminder, and transaction panels.
@@ -103,6 +103,14 @@ Not in version 1.3.0. SMS requires a live messaging provider and may involve per
 7. Settings with company acknowledgement header and reminder configuration.
 
 == Changelog ==
+
+= 1.3.1 =
+* Renamed the public plugin identity from Lend Sure to Your Loan Ledger for WordPress.org review compliance.
+* Changed the text domain to `your-loan-ledger` while preserving existing internal identifiers and stored data.
+* Moved acknowledgement presentation and print behavior to properly enqueued asset files.
+* Corrected the WordPress.org contributor username to `mosescursor`.
+* Completed a security, sanitization, escaping, database, and internationalization compliance review.
+* No new features or loan-calculation behavior changes.
 
 = 1.3.0 =
 * Added Edit Borrower workflow for correcting incomplete or changed borrower details.
@@ -178,4 +186,4 @@ Adds branded acknowledgement headers and loan-specific penalty terms. Existing l
 
 == Legal Notice ==
 
-Lend Sure is an administrative record-keeping tool, not legal or financial advice. Review the laws and regulations applicable to lending, interest, penalties, privacy, taxation, and document enforceability in your jurisdiction before relying on the plugin for formal lending activities.
+Your Loan Ledger is an administrative record-keeping tool, not legal or financial advice. Review the laws and regulations applicable to lending, interest, penalties, privacy, taxation, and document enforceability in your jurisdiction before relying on the plugin for formal lending activities.

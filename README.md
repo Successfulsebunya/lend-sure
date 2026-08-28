@@ -1,8 +1,8 @@
-# Lend Sure
+# Your Loan Ledger
 
-**Lend Sure** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, signed acknowledgements, due dates, reminders, and transaction history from the WordPress dashboard.
+**Your Loan Ledger** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, signed acknowledgements, due dates, reminders, and transaction history from the WordPress dashboard.
 
-- **Version:** 1.3.0
+- **Version:** 1.3.1
 - **Default interest:** 20% per month, configurable
 - **WordPress:** 6.4+
 - **PHP:** 7.4+
@@ -41,8 +41,8 @@
 
 1. Download the release ZIP.
 2. In WordPress, open **Plugins → Add New → Upload Plugin**.
-3. Upload and activate Lend Sure.
-4. Open **Lend Sure → Settings**.
+3. Upload and activate Your Loan Ledger.
+4. Open **Your Loan Ledger → Settings**.
 5. Configure loan defaults, company/lender acknowledgement details, and reminder settings.
 6. Add a borrower and create the first loan.
 
@@ -85,7 +85,7 @@ These are captured when the loan is created and displayed in the acknowledgement
 
 ## Loan Acknowledgements
 
-Version 1.3.0 retains the business header and acknowledgement workflow. Under **Lend Sure → Settings**, you can configure:
+Version 1.3.0 retains the business header and acknowledgement workflow. Under **Your Loan Ledger → Settings**, you can configure:
 
 - Company / Business Name
 - Company Logo
@@ -112,7 +112,7 @@ Version 1.3.0 retains the reminder workflow and hardened mail failure handling:
 - an optional daily lender/admin digest is scheduled using WP-Cron;
 - reminder attempts are logged.
 
-SMS is not built into v1.3.0 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
+SMS is not built into v1.3.1 because reliable live SMS requires a provider account and usually incurs delivery or sender-ID costs. The reminder layer is intentionally separated so an SMS provider can be added later without changing the loan ledger.
 
 ## Documentation
 
@@ -130,13 +130,13 @@ find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
 
 ## Security and Privacy
 
-Lend Sure administration screens require the WordPress `manage_options` capability. Actions use WordPress nonces and input sanitization. Signed acknowledgement files are stored through the WordPress Media Library.
+Your Loan Ledger administration screens require the WordPress `manage_options` capability. Actions use WordPress nonces and input sanitization. Signed acknowledgement files are stored through the WordPress Media Library.
 
 Loan records may contain personal and financial information. Secure the WordPress installation, restrict administrator accounts, maintain backups, and follow applicable data-protection requirements.
 
 ## Legal Notice
 
-Lend Sure is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
+Your Loan Ledger is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
 
 ## Changelog
 

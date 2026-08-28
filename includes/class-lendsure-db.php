@@ -49,7 +49,7 @@ class LendSure_DB {
             $value = max( 0, (float) get_option( 'lendsure_penalty_value', 5 ) );
             $table = self::table( 'loans' );
 
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time migration write; activate() flushes the Lend Sure object cache after migration.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time migration write; activate() flushes the Your Loan Ledger object cache after migration.
             $wpdb->query(
                 $wpdb->prepare(
                     'UPDATE %i SET penalty_type = %s, penalty_value = %f',
@@ -442,7 +442,7 @@ class LendSure_DB {
             return false;
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned table write; the Lend Sure object cache is flushed immediately after a successful update.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned table write; the Your Loan Ledger object cache is flushed immediately after a successful update.
         $result = $wpdb->update( $table, $data, $where, $format, $where_format );
         if ( false !== $result ) {
             self::flush_cache();
