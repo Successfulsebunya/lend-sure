@@ -1,22 +1,22 @@
-# Lend Sure Administrator User Guide
+# Your Loan Ledger Administrator User Guide
 
 ## 1. Introduction
 
-Lend Sure is a WordPress dashboard plugin for managing private loans. It helps the administrator track who borrowed money, how much was lent, the monthly interest, the payment due date, partial payments, loan extensions, penalties, signed acknowledgement documents, and the complete transaction history of each loan.
+Your Loan Ledger is a WordPress dashboard plugin for managing private loans. It helps the administrator track who borrowed money, how much was lent, the monthly interest, the payment due date, partial payments, loan extensions, penalties, signed acknowledgement documents, and the complete transaction history of each loan.
 
 The default monthly interest rate is **20%**, although the rate can be changed in Settings or changed for an individual loan when it is created.
 
 ---
 
-## 2. Installing Lend Sure
+## 2. Installing Your Loan Ledger
 
 1. Log in to WordPress as an Administrator.
 2. Go to **Plugins → Add New**.
 3. Click **Upload Plugin**.
-4. Select the Lend Sure ZIP file.
+4. Select the Your Loan Ledger ZIP file.
 5. Click **Install Now**.
 6. After installation, click **Activate Plugin**.
-7. A new **Lend Sure** menu appears in the WordPress dashboard.
+7. A new **Your Loan Ledger** menu appears in the WordPress dashboard.
 
 After activation, configure the plugin before entering the first loan.
 
@@ -24,7 +24,7 @@ After activation, configure the plugin before entering the first loan.
 
 ## 3. First-Time Setup: Settings Module
 
-Open **Lend Sure → Settings**.
+Open **Your Loan Ledger → Settings**.
 
 ### Loan Defaults
 
@@ -79,7 +79,7 @@ Click **Save Settings** after making changes.
 
 ## 4. Dashboard Module
 
-Open **Lend Sure → Dashboard**.
+Open **Your Loan Ledger → Dashboard**.
 
 The Dashboard gives a quick summary of the current lending position and a 12-month view of lending activity.
 
@@ -125,7 +125,7 @@ It shows:
 
 The graph is intended to help identify growth or decline in lending activity and collected lending income.
 
-> **Important:** Lending income is not the same as accounting profit. Lend Sure does not currently deduct operating expenses, bad-debt write-offs, taxes, staff costs, or other business expenses.
+> **Important:** Lending income is not the same as accounting profit. Your Loan Ledger does not currently deduct operating expenses, bad-debt write-offs, taxes, staff costs, or other business expenses.
 
 Each bar series is scaled to its own highest month to emphasize the direction of the trend. Use the Loans and Payments records for exact monetary comparisons.
 
@@ -153,7 +153,7 @@ The Dashboard includes buttons for:
 
 ## 5. Borrowers Module
 
-Open **Lend Sure → Borrowers**.
+Open **Your Loan Ledger → Borrowers**.
 
 This module stores the people who receive loans.
 
@@ -176,7 +176,7 @@ Available fields are:
 
 Version 1.3.0 allows the administrator to correct or update borrower information.
 
-1. Go to **Lend Sure → Borrowers**.
+1. Go to **Your Loan Ledger → Borrowers**.
 2. Find the borrower.
 3. Click **Edit**.
 4. Correct or complete the required information.
@@ -184,7 +184,7 @@ Version 1.3.0 allows the administrator to correct or update borrower information
 
 This is useful when a borrower initially provided incomplete details or later changes their phone number, email, address, identification information, or other notes.
 
-Updated borrower data is used when Lend Sure generates future loan documents. Any signed acknowledgement file that was already uploaded remains unchanged and continues to serve as the historical signed record.
+Updated borrower data is used when Your Loan Ledger generates future loan documents. Any signed acknowledgement file that was already uploaded remains unchanged and continues to serve as the historical signed record.
 
 ### Borrower List
 
@@ -202,7 +202,7 @@ A borrower must exist before a loan can be created for them.
 
 ## 6. Loans Module
 
-Open **Lend Sure → Loans**.
+Open **Your Loan Ledger → Loans**.
 
 The Loans screen is the main loan register. It displays:
 
@@ -231,7 +231,7 @@ At the bottom of the Loans screen, version 1.3.0 shows:
 
 ### Creating a New Loan
 
-1. Go to **Lend Sure → Loans**.
+1. Go to **Your Loan Ledger → Loans**.
 2. Click **Add New**.
 3. Select a borrower.
 4. Enter the principal amount.
@@ -277,9 +277,9 @@ Optional terms printed on the acknowledgement document.
 
 ## 7. Understanding a Loan Record
 
-Open any loan from **Lend Sure → Loans**.
+Open any loan from **Your Loan Ledger → Loans**.
 
-At the top of the loan screen, Lend Sure shows four current figures:
+At the top of the loan screen, Your Loan Ledger shows four current figures:
 
 - **Principal** — remaining unpaid principal.
 - **Interest Due** — currently accrued unpaid interest.
@@ -381,7 +381,7 @@ Click **Record Payment**.
 
 ### How Payments Are Allocated
 
-Lend Sure automatically allocates each payment in this order:
+Your Loan Ledger automatically allocates each payment in this order:
 
 1. Interest
 2. Penalty
@@ -556,7 +556,7 @@ Use Transaction History when you need to understand how the current loan balance
 
 ## 14. Exporting the Loan Register
 
-Go to **Lend Sure → Loans** and click **Export CSV**.
+Go to **Your Loan Ledger → Loans** and click **Export CSV**.
 
 The plugin downloads a CSV file containing the loan register.
 
@@ -584,7 +584,7 @@ Export the register periodically and store a secure backup outside the WordPress
 
 ## 15. Recommended Daily Workflow
 
-A simple routine for using Lend Sure is:
+A simple routine for using Your Loan Ledger is:
 
 ### When Lending Money
 
@@ -697,7 +697,7 @@ The Transaction History preserves each step so the administrator can trace the c
 
 ## 18. Data Protection and Security
 
-Lend Sure may hold personally identifiable borrower information and financial records.
+Your Loan Ledger may hold personally identifiable borrower information and financial records.
 
 Recommended safeguards:
 
@@ -715,10 +715,10 @@ Recommended safeguards:
 ## 19. Troubleshooting
 
 ### I cannot create a loan
-Confirm that at least one borrower has already been created under **Lend Sure → Borrowers**.
+Confirm that at least one borrower has already been created under **Your Loan Ledger → Borrowers**.
 
 ### The interest rate is not 20%
-Open **Lend Sure → Settings** and confirm **Default Monthly Interest (%)** is set to `20`. Also remember that an individual loan can have a different rate if its value was changed during loan creation.
+Open **Your Loan Ledger → Settings** and confirm **Default Monthly Interest (%)** is set to `20`. Also remember that an individual loan can have a different rate if its value was changed during loan creation.
 
 ### I uploaded the wrong acknowledgement
 Open the loan and use **Replace Signed Copy**.
@@ -739,7 +739,7 @@ If **Capitalize unpaid interest and penalty into the new principal** was enabled
 
 ## 20. Reminders and Due-Date Workflow
 
-Lend Sure retains the v1.1.0 dedicated follow-up workflow so you do not have to manually remember which borrowers need attention.
+Your Loan Ledger retains the v1.1.0 dedicated follow-up workflow so you do not have to manually remember which borrowers need attention.
 
 ### Timing Labels
 
@@ -756,7 +756,7 @@ These labels do not change the financial balance. They are operational labels us
 
 ### Reminders Module
 
-Go to **Lend Sure → Reminders**.
+Go to **Your Loan Ledger → Reminders**.
 
 The screen lists active loans that are due within seven days, due today, in grace, or overdue. For each loan you can see:
 
@@ -774,7 +774,7 @@ You can send a reminder from either the **Reminders** screen or the individual l
 
 1. Confirm the borrower's email address is correct.
 2. Click **Email Reminder** or **Send Email Reminder**.
-3. Lend Sure sends a plain-text email through WordPress `wp_mail()`.
+3. Your Loan Ledger sends a plain-text email through WordPress `wp_mail()`.
 4. The message includes the current amount due, due date and timing status.
 5. The attempt is added to **Recent Reminder Activity** as sent or failed.
 
@@ -782,7 +782,7 @@ The reminder does not change the loan, charge a penalty or extend the due date. 
 
 ### Daily Admin Due-Date Digest
 
-Go to **Lend Sure → Settings → Due-Date Reminders**.
+Go to **Your Loan Ledger → Settings → Due-Date Reminders**.
 
 You can configure:
 
@@ -792,13 +792,13 @@ You can configure:
 
 The daily digest includes qualifying active loans and all loans already in grace or overdue.
 
-Lend Sure uses WP-Cron only to trigger the reminder digest. Loan balances and due-date calculations do not depend on WP-Cron. Because normal WP-Cron runs when the WordPress site receives traffic, the digest should be treated as daily rather than guaranteed at an exact clock time.
+Your Loan Ledger uses WP-Cron only to trigger the reminder digest. Loan balances and due-date calculations do not depend on WP-Cron. Because normal WP-Cron runs when the WordPress site receives traffic, the digest should be treated as daily rather than guaranteed at an exact clock time.
 
 ### Recommended Daily Routine
 
-1. Open **Lend Sure → Dashboard**.
+1. Open **Your Loan Ledger → Dashboard**.
 2. Review **Due Today**, **Due This Week**, **Grace Period**, and **Overdue** cards.
-3. Open **Lend Sure → Reminders**.
+3. Open **Your Loan Ledger → Reminders**.
 4. Contact borrowers who require follow-up.
 5. Send an email reminder where appropriate.
 6. Record any payment immediately when received.
@@ -822,7 +822,7 @@ The administrator remains in control of payments, extensions, and penalties.
 
 ## 22. Legal Notice
 
-Lend Sure provides administrative calculations and record keeping. It does not determine whether an interest rate, penalty, acknowledgement, or lending arrangement is legally enforceable.
+Your Loan Ledger provides administrative calculations and record keeping. It does not determine whether an interest rate, penalty, acknowledgement, or lending arrangement is legally enforceable.
 
 Before using the plugin for formal lending activities, obtain appropriate advice regarding lending, consumer protection, taxation, privacy, interest, penalties, and document enforceability in the applicable jurisdiction.
 
