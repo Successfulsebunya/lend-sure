@@ -22,10 +22,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .release-payload-00.b64 .release-payload-01.b64 .release-payload-02.b64 .release-payload-03.b64 .release-payload-04.b64 .release-payload-05.b64 .release-payload-06.b64 | base64 -d > /tmp/your-loan-ledger-1.3.1-github.zip
+          package=/tmp/your-loan-ledger-1.3.1-github.zip
+          : > "$package"
+          for part in .release-payload-00.b64 .release-payload-01.b64 .release-payload-02.b64 .release-payload-03.b64 .release-payload-04.b64 .release-payload-05.b64 .release-payload-06.b64; do
+            base64 -d "$part" >> "$package"
+          done
+          echo "a6d7866d11902085e70b9778614b679ecae64aa4c4ae7b05e9fd60ecfd25cf22  $package" | sha256sum -c -
           rm -rf /tmp/yll-src
           mkdir -p /tmp/yll-src
-          unzip -q /tmp/your-loan-ledger-1.3.1-github.zip -d /tmp/yll-src
+          unzip -q "$package" -d /tmp/yll-src
           cp -a /tmp/yll-src/lend-sure/. .
           rm -f .release-payload-*.b64
           rm -f .github/workflows/apply-v1.3.1.yml
