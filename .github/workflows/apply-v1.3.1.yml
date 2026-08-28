@@ -5,39 +5,9 @@ on:
     branches:
       - release/v1.3.1
 
-permissions:
-  contents: write
-
 jobs:
   apply:
-    if: github.actor != 'github-actions[bot]'
+    if: false
     runs-on: ubuntu-latest
     steps:
-      - name: Check out release branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Rebuild and apply v1.3.1 source
-        shell: bash
-        run: |
-          set -euo pipefail
-          package=/tmp/your-loan-ledger-1.3.1-github.zip
-          : > "$package"
-          for part in .release-payload-00.b64 .release-payload-01.b64 .release-payload-02.b64 .release-payload-03.b64 .release-payload-04.b64 .release-payload-05.b64 .release-payload-06.b64; do
-            base64 -d "$part" >> "$package"
-          done
-          echo "a6d7866d11902085e70b9778614b679ecae64aa4c4ae7b05e9fd60ecfd25cf22  $package" | sha256sum -c -
-          rm -rf /tmp/yll-src
-          mkdir -p /tmp/yll-src
-          unzip -q "$package" -d /tmp/yll-src
-          cp -a /tmp/yll-src/lend-sure/. .
-          rm -f .release-payload-*.b64
-          rm -f .github/workflows/apply-v1.3.1.yml
-          rmdir .github/workflows 2>/dev/null || true
-          rmdir .github 2>/dev/null || true
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Release Your Loan Ledger v1.3.1 with WordPress.org review compliance fixes"
-          git push origin HEAD:release/v1.3.1
+      - run: echo "Superseded by apply-v1.3.1-fixed.yml"
