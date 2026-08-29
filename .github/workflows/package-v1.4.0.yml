@@ -1,0 +1,47 @@
+name: Package v1.4.0 test build
+
+on:
+  push:
+    branches:
+      - feature/v1.4.0
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+
+      - name: Build WordPress install ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/yll-package
+          mkdir -p /tmp/yll-package/install/your-loan-ledger
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            ./ /tmp/yll-package/install/your-loan-ledger/
+          ( cd /tmp/yll-package/install && zip -qr /tmp/yll-package/your-loan-ledger-1.4.0.zip your-loan-ledger )
+
+      - name: Build GitHub source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/yll-package/source/your-loan-ledger
+          rsync -a --exclude='.git' --exclude='.github/workflows/package-v1.4.0.yml' ./ /tmp/yll-package/source/your-loan-ledger/
+          ( cd /tmp/yll-package/source && zip -qr /tmp/yll-package/your-loan-ledger-1.4.0-github.zip your-loan-ledger )
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: your-loan-ledger-v1.4.0-packages
+          path: |
+            /tmp/yll-package/your-loan-ledger-1.4.0.zip
+            /tmp/yll-package/your-loan-ledger-1.4.0-github.zip
+          retention-days: 7
