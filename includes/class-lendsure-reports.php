@@ -65,11 +65,10 @@ class LendSure_Reports {
     private function build_report( $from, $to ) {
         global $wpdb;
 
-        $loans     = LendSure_DB::table( 'loans' );
-        $payments  = LendSure_DB::table( 'payments' );
-        $borrowers = LendSure_DB::table( 'borrowers' );
-        $grace     = max( 0, absint( get_option( 'lendsure_grace_days', 3 ) ) );
-        $today     = current_time( 'Y-m-d' );
+        $loans    = LendSure_DB::table( 'loans' );
+        $payments = LendSure_DB::table( 'payments' );
+        $grace    = max( 0, absint( get_option( 'lendsure_grace_days', 3 ) ) );
+        $today    = current_time( 'Y-m-d' );
         $overdue_cutoff = wp_date( 'Y-m-d', strtotime( '-' . $grace . ' days', strtotime( $today ) ) );
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Administrator-run report against plugin-owned ledger tables.
@@ -172,10 +171,12 @@ class LendSure_Reports {
         $end    = new DateTimeImmutable( $to, wp_timezone() );
         $cursor = $cursor->modify( 'first day of this month' );
         $end    = $end->modify( 'first day of this month' );
+
         while ( $cursor <= $end ) {
-            $key = $cursor->format( 'Y-m' );
+            $key    = $cursor->format( 'Y-m' );
             $issued = isset( $issued_rows[ $key ] ) ? $issued_rows[ $key ] : null;
             $paid   = isset( $collection_rows[ $key ] ) ? $collection_rows[ $key ] : null;
+
             $months[] = array(
                 'month'               => wp_date( 'M Y', $cursor->getTimestamp(), wp_timezone() ),
                 'loans_count'         => $issued ? (int) $issued->loans_count : 0,
@@ -187,9 +188,9 @@ class LendSure_Reports {
             $cursor = $cursor->modify( '+1 month' );
         }
 
-        $principal_issued = (float) $loan_period->principal_issued;
+        $principal_issued    = (float) $loan_period->principal_issued;
         $principal_collected = (float) $collections->principal_collected;
-        $expected = (float) $portfolio->outstanding_principal + (float) $portfolio->outstanding_interest + (float) $portfolio->outstanding_penalties;
+        $expected            = (float) $portfolio->outstanding_principal + (float) $portfolio->outstanding_interest + (float) $portfolio->outstanding_penalties;
 
         return array(
             'from'                  => $from,
@@ -225,6 +226,7 @@ class LendSure_Reports {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
+
         list( $from, $to ) = $this->requested_range();
         $report = $this->build_report( $from, $to );
         ?>
@@ -242,12 +244,15 @@ class LendSure_Reports {
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <input type="hidden" name="action" value="lendsure_export_business_report">
-                <input type="hidden" name="from" value="<?php echo esc_attr( $from ); ?>"><input type="hidden" name="to" value="<?php echo esc_attr( $to ); ?>">
+                <input type="hidden" name="from" value="<?php echo esc_attr( $from ); ?>">
+                <input type="hidden" name="to" value="<?php echo esc_attr( $to ); ?>">
                 <?php wp_nonce_field( 'lendsure_export_business_report' ); ?>
                 <?php submit_button( __( 'Export CSV', 'your-loan-ledger' ), 'secondary', 'submit', false ); ?>
             </form>
 
+            <?php /* translators: 1: report start date, 2: report end date. */ ?>
             <h2><?php echo esc_html( sprintf( __( 'Reporting Period: %1$s to %2$s', 'your-loan-ledger' ), $from, $to ) ); ?></h2>
+
             <h2><?php esc_html_e( 'Executive Summary', 'your-loan-ledger' ); ?></h2>
             <table class="widefat striped"><tbody>
                 <tr><th><?php esc_html_e( 'Loans issued', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $report['loans_issued'] ); ?></td></tr>
@@ -273,6 +278,7 @@ class LendSure_Reports {
                 <tr><th><?php esc_html_e( 'Overdue loans', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $report['overdue_loans'] ); ?></td></tr>
                 <tr><th><?php esc_html_e( 'Overdue exposure', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['overdue_exposure'] ) ); ?></td></tr>
             </tbody></table>
+            <?php /* translators: %d: configured number of grace-period days. */ ?>
             <p class="description"><?php echo esc_html( sprintf( __( 'Overdue exposure uses the configured %d-day grace period.', 'your-loan-ledger' ), $report['grace_days'] ) ); ?></p>
 
             <h2><?php esc_html_e( 'Monthly Performance', 'your-loan-ledger' ); ?></h2>
@@ -298,15 +304,19 @@ class LendSure_Reports {
             wp_die( esc_html__( 'You do not have permission to perform this action.', 'your-loan-ledger' ) );
         }
         check_admin_referer( 'lendsure_export_business_report' );
+
         $from = isset( $_POST['from'] ) ? sanitize_text_field( wp_unslash( $_POST['from'] ) ) : '';
         $to   = isset( $_POST['to'] ) ? sanitize_text_field( wp_unslash( $_POST['to'] ) ) : '';
         if ( ! $this->valid_date( $from ) || ! $this->valid_date( $to ) ) {
             wp_die( esc_html__( 'Invalid report date range.', 'your-loan-ledger' ) );
         }
         if ( $from > $to ) {
-            $tmp = $from; $from = $to; $to = $tmp;
+            $tmp  = $from;
+            $from = $to;
+            $to   = $tmp;
         }
-        $report = $this->build_report( $from, $to );
+
+        $report   = $this->build_report( $from, $to );
         $filename = 'your-loan-ledger-report-' . $from . '-to-' . $to . '.csv';
         nocache_headers();
         header( 'Content-Type: text/csv; charset=utf-8' );
@@ -333,6 +343,7 @@ class LendSure_Reports {
             array(),
             array( 'Month', 'Loans', 'Principal Issued', 'Cash Collected', 'Principal Collected', 'Lending Income' ),
         );
+
         foreach ( $report['months'] as $month ) {
             $rows[] = array( $month['month'], $month['loans_count'], $month['principal_issued'], $month['total_collected'], $month['principal_collected'], $month['lending_income'] );
         }
