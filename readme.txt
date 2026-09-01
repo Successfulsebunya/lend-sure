@@ -4,44 +4,47 @@ Tags: loans, lending, payments, interest, ledger
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Track private loans, borrowers, repayments, interest, penalties, reminders, extensions, and signed acknowledgements in WordPress.
+Track private loans, borrowers, repayments, interest, penalties, reminders, extensions, backups, and lending reports in WordPress.
 
 == Description ==
 
 Your Loan Ledger is a lightweight WordPress dashboard plugin for administrators who need to manage private loans without running a separate loan-management application.
 
-It provides a clear loan ledger for borrowers, principal, monthly interest, due dates, partial repayments, extensions, late penalties, signed loan acknowledgements, due-date reminders, and transaction history.
+It provides a loan ledger for borrowers, principal, monthly interest, due dates, partial repayments, extensions, late penalties, signed loan acknowledgements, due-date reminders, transaction history, backups, corrections, and management reporting.
 
 The default monthly interest rate is 20%, but it can be changed in Settings or for an individual loan.
 
 = Core features =
 
-* Borrower records with contact and identification details.
-* Editable borrower records for correcting or updating borrower details.
+* Borrower records with editable contact and identification details.
 * Loan creation with automatic first-month interest.
 * Default 20% monthly interest, configurable per loan.
 * Per-loan late penalty terms: percentage or fixed amount.
-* Editable one-off penalty when applying a charge.
 * Partial payments allocated in the order: interest, penalty, principal.
 * Loan extensions with optional capitalization of unpaid interest and penalties.
 * Administrator-selectable extension date for retrospective record entry.
 * Customizable acknowledgement header with company/business name, logo, and company details.
-* Loan Acknowledgement & Acceptance containing the agreed interest and penalty terms.
-* One primary Save PDF action for acknowledgement documents using the browser's native PDF output.
-* Upload signed PDF, JPG/JPEG, or PNG acknowledgement copies back to the loan record.
+* Loan Acknowledgement & Acceptance with two witness lines.
+* Browser-native Save PDF workflow for acknowledgement documents.
+* Upload signed PDF, JPG/JPEG, or PNG acknowledgement copies to the loan record.
 * Due Today, Due This Week, Grace Period, Overdue, and Upcoming statuses.
-* Manual borrower email reminders with a lender/admin copy and safer mail/SMTP failure handling.
+* Manual borrower email reminders with a lender/admin copy.
 * Optional daily lender/admin due-date digest using WordPress mail and WP-Cron.
 * Reminder activity log.
 * Full payment and transaction history.
 * Dashboard Total Expected Amount across active loans.
 * Loan Register Totals beneath the Loans table.
-* Dependency-free 12-month performance chart for principal issued and lending income collected.
+* Dependency-free 12-month performance chart.
 * CSV export of the loan register.
+* Complete administrator JSON backup and restore.
+* Audit-safe payment reversal using a Void Payment workflow.
+* Loan void/cancel and separately protected permanent deletion controls.
+* Business lending reports with date filters, CSV export, and Print / Save PDF.
+* Explicit uninstall cleanup controls; normal uninstall preserves data by default.
 * Dedicated custom database tables for loan data.
 
 Project source: https://github.com/Successfulsebunya/lend-sure
@@ -54,7 +57,7 @@ Author: https://mosescursor.com/
 2. Upload the Your Loan Ledger ZIP file and click **Install Now**.
 3. Activate **Your Loan Ledger**.
 4. Open **Your Loan Ledger > Settings**.
-5. Configure currency, default interest, grace period, default penalty, company/lender acknowledgement details, and reminder settings.
+5. Configure currency, default interest, grace period, default penalty, company/lender details, and reminder settings.
 6. Go to **Your Loan Ledger > Borrowers** and add a borrower.
 7. Go to **Your Loan Ledger > Loans > Add New** to create the first loan.
 
@@ -70,7 +73,7 @@ Payments are allocated to outstanding interest first, then outstanding penalties
 
 = Can each loan have a different penalty? =
 
-Yes. Version 1.3.0 stores the agreed penalty type and value with each loan. The penalty is included in the acknowledgement terms. When applying a penalty, the administrator can also edit the value for an intentional one-off charge.
+Yes. Each loan stores its agreed penalty type and value. The penalty is included in the acknowledgement terms.
 
 = Does Your Loan Ledger automatically add penalties when a loan becomes overdue? =
 
@@ -78,7 +81,7 @@ No. Timing statuses are automatic, but penalty application remains an administra
 
 = How do I create a PDF acknowledgement? =
 
-Open the loan and choose **Save Acknowledgement PDF**. On the acknowledgement screen click **Save PDF**, then select the browser's **Save as PDF** destination. This avoids adding a large PDF library to the plugin.
+Open the loan and choose **Save Acknowledgement PDF**. On the acknowledgement screen choose **Save PDF**, then select the browser's **Save as PDF** destination.
 
 = Can I upload the signed acknowledgement? =
 
@@ -86,104 +89,85 @@ Yes. Signed PDF, JPG/JPEG, and PNG files can be attached to the corresponding lo
 
 = How are reminders sent? =
 
-Borrower reminders and the lender/admin daily digest currently use WordPress `wp_mail()`. The daily digest is scheduled with WP-Cron and therefore depends on site traffic for execution.
+Borrower reminders and the lender/admin daily digest use WordPress `wp_mail()`. The daily digest is scheduled with WP-Cron and therefore depends on site traffic for execution.
 
 = Does the plugin send SMS? =
 
-Not in version 1.3.1. SMS requires a live messaging provider and may involve per-message or sender-ID charges. The reminder architecture can be extended with an SMS provider in a later release.
+No. SMS requires a live messaging provider and is not bundled into version 1.4.0.
+
+= What is the difference between CSV export and Complete Backup? =
+
+CSV export is intended for viewing loan-register data in spreadsheet software. Complete Backup creates a portable JSON package of the plugin's ledger tables, settings, and referenced acknowledgement/company-logo media when those files can be read. Use Complete Backup before migration, major maintenance, restore, or data cleanup.
+
+= Does restoring a backup merge with current data? =
+
+No. Restore is an administrator-only replacement operation. It replaces the current Your Loan Ledger dataset with the selected backup and requires the administrator to type `RESTORE` exactly.
+
+= Can a payment be deleted? =
+
+The normal correction workflow is **Void Payment**, not silent deletion. A safe void reverses the payment's principal, interest, and penalty allocation and stores the original payment details in the audit transaction history. To protect balances, only the latest payment can be voided when no later balance-changing activity depends on it.
+
+= Can a loan be deleted? =
+
+A loan can be **Void / Cancelled** while preserving its history. For invalid or test records, administrators also have a separately confirmed permanent-delete action that removes the loan and its related payment, transaction, and reminder records while retaining the borrower record.
+
+= Will uninstalling the plugin delete my data? =
+
+Not by default. Your Loan Ledger preserves its database data on a normal uninstall. Under **Your Loan Ledger > Tools**, an administrator can explicitly enable database deletion on uninstall or use the immediate **Erase All Data & Deactivate** control. Download a Complete Backup first.
+
+= What does Lending Income mean in Reports? =
+
+Lending Income is interest plus penalties actually collected. It is not accounting net profit because the plugin does not track operating expenses, taxes, write-offs, salaries, rent, or other business costs.
 
 == Screenshots ==
 
-1. Your Loan Ledger dashboard with active and due-date summaries.
-2. Borrower management screen.
-3. New loan form with interest and per-loan penalty terms.
-4. Loan detail screen with payment, dated extension, penalty, reminder, and transaction panels.
+1. Dashboard with active-loan and expected-repayment totals.
+2. Borrower management and editing screen.
+3. New loan form with interest and penalty terms.
+4. Loan detail screen with payment, extension, penalty, reminder, and transaction panels.
 5. Branded Loan Acknowledgement & Acceptance with centered logo and two witness lines.
 6. Reminder follow-up queue.
-7. Settings with company acknowledgement header and reminder configuration.
+7. Management lending report.
+8. Backup, restore, corrections, and data-cleanup tools.
 
 == Changelog ==
+
+= 1.4.0 =
+* Added complete administrator JSON backup and restore for ledger data and plugin settings.
+* Backups include referenced company-logo and acknowledgement media when available.
+* Added audit-safe Void Payment workflow that reverses payment allocation while preserving the correction in transaction history.
+* Added loan Void / Cancel and separately confirmed permanent-delete controls.
+* Added management business reports with date filters, lending/collection metrics, current portfolio exposure, monthly performance, CSV export, and Print / Save PDF.
+* Added explicit uninstall cleanup policy and immediate Erase All Data & Deactivate control.
+* Normal uninstall continues to preserve plugin data unless the administrator explicitly opts in to deletion.
 
 = 1.3.1 =
 * Renamed the public plugin identity from Lend Sure to Your Loan Ledger for WordPress.org review compliance.
 * Changed the text domain to `your-loan-ledger` while preserving existing internal identifiers and stored data.
-* Moved acknowledgement presentation and print behavior to properly enqueued asset files.
-* Corrected the WordPress.org contributor username to `mosescursor`.
-* Completed a security, sanitization, escaping, database, and internationalization compliance review.
-* No new features or loan-calculation behavior changes.
+* Corrected WordPress.org contributor metadata.
+* Moved acknowledgement style and print behavior to WordPress-enqueued assets.
+* Completed review-compliance security, sanitization, escaping, SQL, and internationalization cleanup.
 
 = 1.3.0 =
-* Added Edit Borrower workflow for correcting incomplete or changed borrower details.
-* Added borrower updated-at tracking.
+* Added Edit Borrower workflow.
 * Added Total Expected Amount to the dashboard.
 * Added Loan Register Totals beneath the Loans table.
-* Added a lightweight dependency-free 12-month performance chart for principal issued and lending income collected.
-* Clarified that lending income is not accounting profit because operating expenses, taxes, and write-offs are not tracked.
-* Bumped the custom database schema to version 1.3.0.
+* Added a lightweight 12-month performance chart for principal issued and lending income collected.
 
 = 1.2.3 =
-* Completed the second WordPress Plugin Check compliance pass.
-* Moved translator comments directly beside the placeholder translation calls flagged by Plugin Check.
-* Documented cache invalidation for the remaining custom-table migration and update writes so Plugin Check no longer reports false-positive NoCaching warnings.
-* No loan calculation or database schema changes.
-
-= 1.2.2 =
-* Improved WordPress Plugin Check compliance.
-* Reworked custom-table queries to use prepared identifier placeholders and object caching.
-* Hardened nonce verification and request sanitization in admin actions.
-* Added missing translator comments and corrected translatable placeholder strings.
-* Improved output escaping across admin screens.
-* Removed hidden development files from the installable WordPress package.
-* Shortened the WordPress.org short description to the supported length.
-* Kept CSV streaming lightweight while removing the unnecessary direct fclose call.
-
-= 1.2.1 =
-* Hardened borrower email reminders so mail/SMTP failures are caught, logged, and shown as admin notices instead of causing a WordPress critical-error screen where possible.
-* Added an Extension Date field for backdated extension records.
-* Extension-related ledger entries now use the actual extension date entered by the administrator.
-* Centered the acknowledgement logo and placed company details directly beneath it.
-* Treated the company/business as the lender identity on the acknowledgement.
-* Replaced the optional borrower thumbprint area with a second witness name/signature area.
+* Completed Plugin Check compliance fixes for internationalization and custom-table cache handling.
 
 = 1.2.0 =
-* Added company/business name, company details, and company logo settings for acknowledgement headers.
-* Added per-loan penalty type and penalty value fields.
-* Added agreed penalty terms to the Loan Acknowledgement & Acceptance.
-* Made the Apply Penalty type/value editable for intentional one-off charges.
-* Replaced the acknowledgement's primary Print wording with a single Save PDF workflow.
-* Added Plugin URI pointing to the GitHub repository.
-* Added Author URI pointing to mosescursor.com.
-* Manual borrower reminder emails now send a lender/admin copy where configured.
-* Updated project and administrator documentation.
+* Added branded acknowledgement header and per-loan penalty terms.
+* Added Save PDF acknowledgement workflow and reminder-mail hardening.
 
 = 1.1.0 =
-* Added Due Today, Due This Week, Grace Period, Overdue, and Upcoming timing states.
-* Added Reminders admin module.
-* Added manual borrower email reminders.
-* Added optional daily admin due-date digest.
-* Added reminder activity log.
-* Added reminder settings and updated dashboard workflow.
+* Added due-date statuses, reminder queue, manual borrower email reminders, and optional daily lender/admin digest.
 
 = 1.0.0 =
 * Initial release.
 
 == Upgrade Notice ==
 
-= 1.3.0 =
-Adds borrower editing, dashboard/loan totals, and 12-month lending performance analytics. The database upgrade adds borrower update tracking automatically.
-
-= 1.2.3 =
-Completes the remaining Plugin Check cleanup from 1.2.2. No loan data migration is required.
-
-= 1.2.2 =
-Improves WordPress Plugin Check compliance and hardens query preparation, nonce handling, escaping, internationalization, and packaging. No loan data migration is required.
-
-= 1.2.1 =
-Improves reminder error handling, adds backdated extension dates, and refines the acknowledgement header and witness section. No loan data migration is required.
-
-= 1.2.0 =
-Adds branded acknowledgement headers and loan-specific penalty terms. Existing loans are retained and receive the configured default penalty values during the database upgrade.
-
-== Legal Notice ==
-
-Your Loan Ledger is an administrative record-keeping tool, not legal or financial advice. Review the laws and regulations applicable to lending, interest, penalties, privacy, taxation, and document enforceability in your jurisdiction before relying on the plugin for formal lending activities.
+= 1.4.0 =
+Adds complete backup/restore, audit-safe payment reversal, loan correction controls, management reports, and explicit uninstall data-cleanup controls. Existing borrowers, loans, payments, settings, and internal `lendsure_*` identifiers are preserved.
