@@ -1,10 +1,10 @@
-=== Your Loan Ledger ===
+=== KuLoan Ledger ===
 Contributors: mosescursor
 Tags: loans, lending, payments, interest, ledger
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Track private loans, borrowers, repayments, interest, penalties, reminders, exte
 
 == Description ==
 
-Your Loan Ledger is a lightweight WordPress dashboard plugin for administrators who need to manage private loans without running a separate loan-management application.
+KuLoan Ledger is a lightweight WordPress dashboard plugin for administrators who need to manage private loans without running a separate loan-management application.
 
 It provides a loan ledger for borrowers, principal, monthly interest, due dates, partial repayments, extensions, late penalties, signed loan acknowledgements, due-date reminders, transaction history, backups, corrections, and management reporting.
 
@@ -54,12 +54,12 @@ Author: https://mosescursor.com/
 == Installation ==
 
 1. In WordPress, go to **Plugins > Add New > Upload Plugin**.
-2. Upload the Your Loan Ledger ZIP file and click **Install Now**.
-3. Activate **Your Loan Ledger**.
-4. Open **Your Loan Ledger > Settings**.
+2. Upload the KuLoan Ledger ZIP file and click **Install Now**.
+3. Activate **KuLoan Ledger**.
+4. Open **KuLoan Ledger > Settings**.
 5. Configure currency, default interest, grace period, default penalty, company/lender details, and reminder settings.
-6. Go to **Your Loan Ledger > Borrowers** and add a borrower.
-7. Go to **Your Loan Ledger > Loans > Add New** to create the first loan.
+6. Go to **KuLoan Ledger > Borrowers** and add a borrower.
+7. Go to **KuLoan Ledger > Loans > Add New** to create the first loan.
 
 == Frequently Asked Questions ==
 
@@ -75,7 +75,7 @@ Payments are allocated to outstanding interest first, then outstanding penalties
 
 Yes. Each loan stores its agreed penalty type and value. The penalty is included in the acknowledgement terms.
 
-= Does Your Loan Ledger automatically add penalties when a loan becomes overdue? =
+= Does KuLoan Ledger automatically add penalties when a loan becomes overdue? =
 
 No. Timing statuses are automatic, but penalty application remains an administrator-controlled action.
 
@@ -101,7 +101,7 @@ CSV export is intended for viewing loan-register data in spreadsheet software. C
 
 = Does restoring a backup merge with current data? =
 
-No. Restore is an administrator-only replacement operation. It replaces the current Your Loan Ledger dataset with the selected backup and requires the administrator to type `RESTORE` exactly.
+No. Restore is an administrator-only replacement operation. It replaces the current KuLoan Ledger dataset with the selected backup and requires the administrator to type `RESTORE` exactly.
 
 = Can a payment be deleted? =
 
@@ -113,7 +113,7 @@ A loan can be **Void / Cancelled** while preserving its history. For invalid or 
 
 = Will uninstalling the plugin delete my data? =
 
-Not by default. Your Loan Ledger preserves its database data on a normal uninstall. Under **Your Loan Ledger > Tools**, an administrator can explicitly enable database deletion on uninstall or use the immediate **Erase All Data & Deactivate** control. Download a Complete Backup first.
+Not by default. KuLoan Ledger preserves its database data on a normal uninstall. Under **KuLoan Ledger > Tools**, an administrator can explicitly enable database deletion on uninstall or use the immediate **Erase All Data & Deactivate** control. Download a Complete Backup first.
 
 = What does Lending Income mean in Reports? =
 
@@ -132,6 +132,13 @@ Lending Income is interest plus penalties actually collected. It is not accounti
 
 == Changelog ==
 
+= 1.4.1 =
+
+* Renamed the public plugin identity from Your Loan Ledger to KuLoan Ledger.
+* Updated the WordPress.org text domain/permalink target to `kuloan-ledger`.
+* Preserved all existing `LendSure_*` classes, `lendsure_*` database tables, options, actions, and stored data.
+* No lending calculation or database schema changes.
+
 = 1.4.0 =
 * Added complete administrator JSON backup and restore for ledger data and plugin settings.
 * Backups include referenced company-logo and acknowledgement media when available.
@@ -142,8 +149,8 @@ Lending Income is interest plus penalties actually collected. It is not accounti
 * Normal uninstall continues to preserve plugin data unless the administrator explicitly opts in to deletion.
 
 = 1.3.1 =
-* Renamed the public plugin identity from Lend Sure to Your Loan Ledger for WordPress.org review compliance.
-* Changed the text domain to `your-loan-ledger` while preserving existing internal identifiers and stored data.
+* Renamed the public plugin identity from Lend Sure to KuLoan Ledger for WordPress.org review compliance.
+* Changed the text domain to `kuloan-ledger` while preserving existing internal identifiers and stored data.
 * Corrected WordPress.org contributor metadata.
 * Moved acknowledgement style and print behavior to WordPress-enqueued assets.
 * Completed review-compliance security, sanitization, escaping, SQL, and internationalization cleanup.

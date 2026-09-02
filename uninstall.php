@@ -1,6 +1,6 @@
 <?php
 /**
- * Your Loan Ledger uninstall handler.
+ * KuLoan Ledger uninstall handler.
  *
  * Data is preserved by default. Database deletion occurs only when an
  * administrator explicitly enables the uninstall cleanup option in Tools.

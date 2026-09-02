@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Data management, backup/restore, and correction controls for Your Loan Ledger.
+ * Data management, backup/restore, and correction controls for KuLoan Ledger.
  *
  * Internal LendSure_* and lendsure_* identifiers are intentionally retained for
  * backward compatibility with installations created before the public rename.
@@ -36,8 +36,8 @@ class LendSure_Management {
     public function menu() {
         add_submenu_page(
             'lendsure',
-            __( 'Tools', 'your-loan-ledger' ),
-            __( 'Tools', 'your-loan-ledger' ),
+            __( 'Tools', 'kuloan-ledger' ),
+            __( 'Tools', 'kuloan-ledger' ),
             'manage_options',
             'lendsure-tools',
             array( $this, 'tools_page' )
@@ -49,7 +49,7 @@ class LendSure_Management {
             return;
         }
         wp_enqueue_script(
-            'your-loan-ledger-management',
+            'kuloan-ledger-management',
             LENDSURE_URL . 'assets/management.js',
             array(),
             LENDSURE_VERSION,
@@ -59,7 +59,7 @@ class LendSure_Management {
 
     private function guard( $nonce_action ) {
         if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You do not have permission to perform this action.', 'your-loan-ledger' ) );
+            wp_die( esc_html__( 'You do not have permission to perform this action.', 'kuloan-ledger' ) );
         }
         check_admin_referer( $nonce_action );
     }
@@ -185,7 +185,7 @@ class LendSure_Management {
         $settings = $this->backup_settings();
         $payload  = array(
             'manifest' => array(
-                'product'        => 'Your Loan Ledger',
+                'product'        => 'KuLoan Ledger',
                 'format_version' => self::BACKUP_FORMAT,
                 'plugin_version' => LENDSURE_VERSION,
                 'db_version'     => get_option( 'lendsure_db_version', '' ),
@@ -197,7 +197,7 @@ class LendSure_Management {
             'media'    => $this->backup_media( $dataset, $settings ),
         );
 
-        $filename = 'your-loan-ledger-backup-' . wp_date( 'Y-m-d-His' ) . '.json';
+        $filename = 'kuloan-ledger-backup-' . wp_date( 'Y-m-d-His' ) . '.json';
         nocache_headers();
         header( 'Content-Type: application/json; charset=utf-8' );
         header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
@@ -207,15 +207,15 @@ class LendSure_Management {
 
     private function decode_uploaded_backup() {
         if ( empty( $_FILES['backup_file'] ) || ! is_array( $_FILES['backup_file'] ) ) {
-            return new WP_Error( 'missing_backup', __( 'Choose a backup JSON file.', 'your-loan-ledger' ) );
+            return new WP_Error( 'missing_backup', __( 'Choose a backup JSON file.', 'kuloan-ledger' ) );
         }
 
         $file = $_FILES['backup_file']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Passed to WordPress upload handling after nonce/capability checks.
         if ( ! empty( $file['error'] ) ) {
-            return new WP_Error( 'upload_error', __( 'The backup file could not be uploaded.', 'your-loan-ledger' ) );
+            return new WP_Error( 'upload_error', __( 'The backup file could not be uploaded.', 'kuloan-ledger' ) );
         }
         if ( ! empty( $file['size'] ) && (int) $file['size'] > 20 * MB_IN_BYTES ) {
-            return new WP_Error( 'backup_too_large', __( 'The backup file is larger than the 20 MB restore limit.', 'your-loan-ledger' ) );
+            return new WP_Error( 'backup_too_large', __( 'The backup file is larger than the 20 MB restore limit.', 'kuloan-ledger' ) );
         }
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -232,21 +232,21 @@ class LendSure_Management {
 
         if ( ! WP_Filesystem() ) {
             wp_delete_file( $uploaded['file'] );
-            return new WP_Error( 'filesystem', __( 'WordPress could not access the uploaded backup file.', 'your-loan-ledger' ) );
+            return new WP_Error( 'filesystem', __( 'WordPress could not access the uploaded backup file.', 'kuloan-ledger' ) );
         }
         global $wp_filesystem;
         $json = $wp_filesystem->get_contents( $uploaded['file'] );
         wp_delete_file( $uploaded['file'] );
         if ( false === $json ) {
-            return new WP_Error( 'read_failed', __( 'The uploaded backup could not be read.', 'your-loan-ledger' ) );
+            return new WP_Error( 'read_failed', __( 'The uploaded backup could not be read.', 'kuloan-ledger' ) );
         }
 
         $payload = json_decode( $json, true );
-        if ( ! is_array( $payload ) || empty( $payload['manifest']['product'] ) || 'Your Loan Ledger' !== $payload['manifest']['product'] ) {
-            return new WP_Error( 'invalid_backup', __( 'This is not a valid Your Loan Ledger backup.', 'your-loan-ledger' ) );
+        if ( ! is_array( $payload ) || empty( $payload['manifest']['product'] ) || 'KuLoan Ledger' !== $payload['manifest']['product'] ) {
+            return new WP_Error( 'invalid_backup', __( 'This is not a valid KuLoan Ledger backup.', 'kuloan-ledger' ) );
         }
         if ( (int) ( $payload['manifest']['format_version'] ?? 0 ) !== self::BACKUP_FORMAT ) {
-            return new WP_Error( 'unsupported_backup', __( 'This backup format is not supported by this version.', 'your-loan-ledger' ) );
+            return new WP_Error( 'unsupported_backup', __( 'This backup format is not supported by this version.', 'kuloan-ledger' ) );
         }
         return $payload;
     }
@@ -301,7 +301,7 @@ class LendSure_Management {
         $this->guard( 'lendsure_restore_backup' );
         $confirmation = isset( $_POST['restore_confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['restore_confirmation'] ) ) : '';
         if ( 'RESTORE' !== $confirmation ) {
-            $this->redirect_tools( __( 'Restore cancelled: type RESTORE exactly to confirm.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'Restore cancelled: type RESTORE exactly to confirm.', 'kuloan-ledger' ), 'error' );
         }
 
         $payload = $this->decode_uploaded_backup();
@@ -359,7 +359,7 @@ class LendSure_Management {
         } catch ( Throwable $e ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Reverts partial restore.
             $wpdb->query( 'ROLLBACK' );
-            $this->redirect_tools( __( 'Restore failed and database changes were rolled back.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'Restore failed and database changes were rolled back.', 'kuloan-ledger' ), 'error' );
         }
 
         foreach ( self::option_keys() as $key ) {
@@ -369,7 +369,7 @@ class LendSure_Management {
         }
         update_option( 'lendsure_db_version', LendSure_DB::DB_VERSION );
         LendSure_DB::flush_cache();
-        $this->redirect_tools( __( 'Backup restored successfully.', 'your-loan-ledger' ) );
+        $this->redirect_tools( __( 'Backup restored successfully.', 'kuloan-ledger' ) );
     }
 
     private function voided_payment_ids() {
@@ -421,7 +421,7 @@ class LendSure_Management {
         $this->guard( 'lendsure_void_payment_' . $payment_id );
         $reason = isset( $_POST['void_reason'] ) ? sanitize_text_field( wp_unslash( $_POST['void_reason'] ) ) : '';
         if ( ! $payment_id || '' === $reason ) {
-            $this->redirect_tools( __( 'A payment and reversal reason are required.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'A payment and reversal reason are required.', 'kuloan-ledger' ), 'error' );
         }
 
         global $wpdb;
@@ -430,12 +430,12 @@ class LendSure_Management {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Administrator-requested lookup in plugin-owned table.
         $payment = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $payments, $payment_id ) );
         if ( ! $this->payment_can_be_voided( $payment ) ) {
-            $this->redirect_tools( __( 'This payment cannot be safely voided because it is already voided or later balance-changing activity exists.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'This payment cannot be safely voided because it is already voided or later balance-changing activity exists.', 'kuloan-ledger' ), 'error' );
         }
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Administrator-requested lookup in plugin-owned table.
         $loan = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $loans, absint( $payment->loan_id ) ) );
         if ( ! $loan ) {
-            $this->redirect_tools( __( 'The payment loan could not be found.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'The payment loan could not be found.', 'kuloan-ledger' ), 'error' );
         }
 
         $original = array(
@@ -457,7 +457,7 @@ class LendSure_Management {
         $note          = trim( (string) $payment->notes );
         $void_note     = sprintf(
             /* translators: 1: original payment amount, 2: reason for voiding. */
-            __( 'VOIDED. Original amount: %1$s. Reason: %2$s', 'your-loan-ledger' ),
+            __( 'VOIDED. Original amount: %1$s. Reason: %2$s', 'kuloan-ledger' ),
             number_format_i18n( $original['amount'], 2 ),
             $reason
         );
@@ -513,18 +513,18 @@ class LendSure_Management {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Completes atomic reversal.
             $wpdb->query( 'COMMIT' );
             LendSure_DB::flush_cache();
-            $this->redirect_tools( __( 'Payment voided and its balance allocation was restored.', 'your-loan-ledger' ) );
+            $this->redirect_tools( __( 'Payment voided and its balance allocation was restored.', 'kuloan-ledger' ) );
         }
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Reverts failed reversal.
         $wpdb->query( 'ROLLBACK' );
-        $this->redirect_tools( __( 'The payment could not be voided.', 'your-loan-ledger' ), 'error' );
+        $this->redirect_tools( __( 'The payment could not be voided.', 'kuloan-ledger' ), 'error' );
     }
 
     public function void_loan() {
         $loan_id = isset( $_POST['loan_id'] ) ? absint( wp_unslash( $_POST['loan_id'] ) ) : 0;
         $this->guard( 'lendsure_void_loan_' . $loan_id );
         if ( ! $loan_id ) {
-            $this->redirect_tools( __( 'Invalid loan.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'Invalid loan.', 'kuloan-ledger' ), 'error' );
         }
         $updated = LendSure_DB::update(
             'loans',
@@ -534,7 +534,7 @@ class LendSure_Management {
             array( '%d' )
         );
         if ( false === $updated ) {
-            $this->redirect_tools( __( 'The loan could not be voided.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'The loan could not be voided.', 'kuloan-ledger' ), 'error' );
         }
         LendSure_DB::insert(
             'transactions',
@@ -543,12 +543,12 @@ class LendSure_Management {
                 'type'             => 'loan_voided',
                 'amount'           => 0,
                 'transaction_date' => current_time( 'Y-m-d' ),
-                'note'             => __( 'Loan voided/cancelled by administrator.', 'your-loan-ledger' ),
+                'note'             => __( 'Loan voided/cancelled by administrator.', 'kuloan-ledger' ),
                 'meta'             => wp_json_encode( array( 'user_id' => get_current_user_id() ) ),
                 'created_at'       => current_time( 'mysql' ),
             )
         );
-        $this->redirect_tools( __( 'Loan voided. Its history has been preserved.', 'your-loan-ledger' ) );
+        $this->redirect_tools( __( 'Loan voided. Its history has been preserved.', 'kuloan-ledger' ) );
     }
 
     public function delete_loan() {
@@ -556,12 +556,12 @@ class LendSure_Management {
         $this->guard( 'lendsure_delete_loan_' . $loan_id );
         $confirmation = isset( $_POST['delete_confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['delete_confirmation'] ) ) : '';
         if ( ! $loan_id || 'DELETE' !== $confirmation ) {
-            $this->redirect_tools( __( 'Permanent deletion cancelled: type DELETE exactly.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'Permanent deletion cancelled: type DELETE exactly.', 'kuloan-ledger' ), 'error' );
         }
         global $wpdb;
         $loan = LendSure_DB::get_loan( $loan_id );
         if ( ! $loan ) {
-            $this->redirect_tools( __( 'Loan not found.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'Loan not found.', 'kuloan-ledger' ), 'error' );
         }
         foreach ( array( 'reminders', 'transactions', 'payments' ) as $name ) {
             $table = LendSure_DB::table( $name );
@@ -575,13 +575,13 @@ class LendSure_Management {
             wp_delete_attachment( absint( $loan->acknowledgement_attachment_id ), true );
         }
         LendSure_DB::flush_cache();
-        $this->redirect_tools( __( 'Loan and its related ledger records were permanently deleted.', 'your-loan-ledger' ) );
+        $this->redirect_tools( __( 'Loan and its related ledger records were permanently deleted.', 'kuloan-ledger' ) );
     }
 
     public function save_cleanup_policy() {
         $this->guard( 'lendsure_save_cleanup_policy' );
         update_option( 'lendsure_delete_data_on_uninstall', ! empty( $_POST['delete_on_uninstall'] ) ? '1' : '0' );
-        $this->redirect_tools( __( 'Uninstall data policy saved.', 'your-loan-ledger' ) );
+        $this->redirect_tools( __( 'Uninstall data policy saved.', 'kuloan-ledger' ) );
     }
 
     public static function delete_all_data( $delete_media = false ) {
@@ -620,7 +620,7 @@ class LendSure_Management {
         $this->guard( 'lendsure_erase_all_data' );
         $confirmation = isset( $_POST['erase_confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['erase_confirmation'] ) ) : '';
         if ( 'ERASE' !== $confirmation ) {
-            $this->redirect_tools( __( 'Data erasure cancelled: type ERASE exactly.', 'your-loan-ledger' ), 'error' );
+            $this->redirect_tools( __( 'Data erasure cancelled: type ERASE exactly.', 'kuloan-ledger' ), 'error' );
         }
         $delete_media = ! empty( $_POST['delete_media'] );
         self::delete_all_data( $delete_media );
@@ -664,35 +664,35 @@ class LendSure_Management {
         $voided   = $this->voided_payment_ids();
         ?>
         <div class="wrap yll-tools-wrap">
-            <h1><?php esc_html_e( 'Your Loan Ledger Tools', 'your-loan-ledger' ); ?></h1>
+            <h1><?php esc_html_e( 'KuLoan Ledger Tools', 'kuloan-ledger' ); ?></h1>
             <?php if ( isset( $_GET['yll_notice'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin notice. ?>
                 <?php $notice = sanitize_text_field( wp_unslash( $_GET['yll_notice'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                 <?php $type = isset( $_GET['yll_type'] ) && 'error' === sanitize_key( wp_unslash( $_GET['yll_type'] ) ) ? 'error' : 'success'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                 <div class="notice notice-<?php echo esc_attr( $type ); ?> is-dismissible"><p><?php echo esc_html( $notice ); ?></p></div>
             <?php endif; ?>
 
-            <h2><?php esc_html_e( 'Backup & Restore', 'your-loan-ledger' ); ?></h2>
-            <p><?php esc_html_e( 'Download a complete portable backup before migration, major maintenance, data cleanup, or uninstall.', 'your-loan-ledger' ); ?></p>
+            <h2><?php esc_html_e( 'Backup & Restore', 'kuloan-ledger' ); ?></h2>
+            <p><?php esc_html_e( 'Download a complete portable backup before migration, major maintenance, data cleanup, or uninstall.', 'kuloan-ledger' ); ?></p>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <input type="hidden" name="action" value="lendsure_export_backup">
                 <?php wp_nonce_field( 'lendsure_export_backup' ); ?>
-                <?php submit_button( __( 'Download Complete Backup', 'your-loan-ledger' ), 'primary', 'submit', false ); ?>
+                <?php submit_button( __( 'Download Complete Backup', 'kuloan-ledger' ), 'primary', 'submit', false ); ?>
             </form>
 
-            <h3><?php esc_html_e( 'Restore Backup', 'your-loan-ledger' ); ?></h3>
-            <p class="description"><?php esc_html_e( 'Restore replaces the current ledger dataset. Download a fresh backup first.', 'your-loan-ledger' ); ?></p>
+            <h3><?php esc_html_e( 'Restore Backup', 'kuloan-ledger' ); ?></h3>
+            <p class="description"><?php esc_html_e( 'Restore replaces the current ledger dataset. Download a fresh backup first.', 'kuloan-ledger' ); ?></p>
             <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <input type="hidden" name="action" value="lendsure_restore_backup">
                 <?php wp_nonce_field( 'lendsure_restore_backup' ); ?>
                 <p><input required type="file" name="backup_file" accept="application/json,.json"></p>
-                <p><label><?php esc_html_e( 'Type RESTORE to confirm:', 'your-loan-ledger' ); ?> <input required type="text" name="restore_confirmation" autocomplete="off"></label></p>
-                <?php submit_button( __( 'Restore Backup', 'your-loan-ledger' ), 'secondary', 'submit', false ); ?>
+                <p><label><?php esc_html_e( 'Type RESTORE to confirm:', 'kuloan-ledger' ); ?> <input required type="text" name="restore_confirmation" autocomplete="off"></label></p>
+                <?php submit_button( __( 'Restore Backup', 'kuloan-ledger' ), 'secondary', 'submit', false ); ?>
             </form>
 
             <hr>
-            <h2><?php esc_html_e( 'Payment Corrections', 'your-loan-ledger' ); ?></h2>
-            <p><?php esc_html_e( 'Payments are voided rather than silently deleted. Only the latest safe payment can be reversed; its original allocation is preserved in the audit transaction.', 'your-loan-ledger' ); ?></p>
-            <table class="widefat striped"><thead><tr><th><?php esc_html_e( 'ID', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Loan / Borrower', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Date', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Amount', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Status / Action', 'your-loan-ledger' ); ?></th></tr></thead><tbody>
+            <h2><?php esc_html_e( 'Payment Corrections', 'kuloan-ledger' ); ?></h2>
+            <p><?php esc_html_e( 'Payments are voided rather than silently deleted. Only the latest safe payment can be reversed; its original allocation is preserved in the audit transaction.', 'kuloan-ledger' ); ?></p>
+            <table class="widefat striped"><thead><tr><th><?php esc_html_e( 'ID', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Loan / Borrower', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Date', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Amount', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Status / Action', 'kuloan-ledger' ); ?></th></tr></thead><tbody>
             <?php foreach ( $this->recent_payments() as $payment ) : ?>
                 <tr>
                     <td><?php echo esc_html( $payment->id ); ?></td>
@@ -701,17 +701,17 @@ class LendSure_Management {
                     <td><?php echo esc_html( $currency . ' ' . number_format_i18n( (float) $payment->amount, 2 ) ); ?></td>
                     <td>
                         <?php if ( isset( $voided[ absint( $payment->id ) ] ) || (float) $payment->amount <= 0 ) : ?>
-                            <strong><?php esc_html_e( 'Voided', 'your-loan-ledger' ); ?></strong>
+                            <strong><?php esc_html_e( 'Voided', 'kuloan-ledger' ); ?></strong>
                         <?php elseif ( $this->payment_can_be_voided( $payment ) ) : ?>
                             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                                 <input type="hidden" name="action" value="lendsure_void_payment">
                                 <input type="hidden" name="payment_id" value="<?php echo esc_attr( $payment->id ); ?>">
                                 <?php wp_nonce_field( 'lendsure_void_payment_' . $payment->id ); ?>
-                                <input required type="text" name="void_reason" placeholder="<?php echo esc_attr__( 'Reason for reversal', 'your-loan-ledger' ); ?>">
-                                <button class="button button-small" type="submit"><?php esc_html_e( 'Void Payment', 'your-loan-ledger' ); ?></button>
+                                <input required type="text" name="void_reason" placeholder="<?php echo esc_attr__( 'Reason for reversal', 'kuloan-ledger' ); ?>">
+                                <button class="button button-small" type="submit"><?php esc_html_e( 'Void Payment', 'kuloan-ledger' ); ?></button>
                             </form>
                         <?php else : ?>
-                            <span class="description"><?php esc_html_e( 'Locked by later activity', 'your-loan-ledger' ); ?></span>
+                            <span class="description"><?php esc_html_e( 'Locked by later activity', 'kuloan-ledger' ); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -719,8 +719,8 @@ class LendSure_Management {
             </tbody></table>
 
             <hr>
-            <h2><?php esc_html_e( 'Loan Record Controls', 'your-loan-ledger' ); ?></h2>
-            <table class="widefat striped"><thead><tr><th><?php esc_html_e( 'Loan', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Borrower', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Status', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Actions', 'your-loan-ledger' ); ?></th></tr></thead><tbody>
+            <h2><?php esc_html_e( 'Loan Record Controls', 'kuloan-ledger' ); ?></h2>
+            <table class="widefat striped"><thead><tr><th><?php esc_html_e( 'Loan', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Borrower', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Status', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Actions', 'kuloan-ledger' ); ?></th></tr></thead><tbody>
             <?php foreach ( $this->recent_loans() as $loan ) : ?>
                 <tr>
                     <td>#<?php echo esc_html( $loan->id ); ?></td>
@@ -731,16 +731,16 @@ class LendSure_Management {
                             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                                 <input type="hidden" name="action" value="lendsure_void_loan"><input type="hidden" name="loan_id" value="<?php echo esc_attr( $loan->id ); ?>">
                                 <?php wp_nonce_field( 'lendsure_void_loan_' . $loan->id ); ?>
-                                <button class="button" type="submit"><?php esc_html_e( 'Void / Cancel Loan', 'your-loan-ledger' ); ?></button>
+                                <button class="button" type="submit"><?php esc_html_e( 'Void / Cancel Loan', 'kuloan-ledger' ); ?></button>
                             </form>
                         <?php endif; ?>
-                        <details><summary><?php esc_html_e( 'Permanent delete', 'your-loan-ledger' ); ?></summary>
+                        <details><summary><?php esc_html_e( 'Permanent delete', 'kuloan-ledger' ); ?></summary>
                             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                                 <input type="hidden" name="action" value="lendsure_delete_loan"><input type="hidden" name="loan_id" value="<?php echo esc_attr( $loan->id ); ?>">
                                 <?php wp_nonce_field( 'lendsure_delete_loan_' . $loan->id ); ?>
-                                <p><label><?php esc_html_e( 'Type DELETE:', 'your-loan-ledger' ); ?> <input required type="text" name="delete_confirmation" autocomplete="off"></label></p>
-                                <p><label><input type="checkbox" name="delete_media" value="1"> <?php esc_html_e( 'Also delete this loan’s acknowledgement media', 'your-loan-ledger' ); ?></label></p>
-                                <button class="button button-link-delete" type="submit"><?php esc_html_e( 'Permanently Delete Loan', 'your-loan-ledger' ); ?></button>
+                                <p><label><?php esc_html_e( 'Type DELETE:', 'kuloan-ledger' ); ?> <input required type="text" name="delete_confirmation" autocomplete="off"></label></p>
+                                <p><label><input type="checkbox" name="delete_media" value="1"> <?php esc_html_e( 'Also delete this loan’s acknowledgement media', 'kuloan-ledger' ); ?></label></p>
+                                <button class="button button-link-delete" type="submit"><?php esc_html_e( 'Permanently Delete Loan', 'kuloan-ledger' ); ?></button>
                             </form>
                         </details>
                     </td>
@@ -749,22 +749,22 @@ class LendSure_Management {
             </tbody></table>
 
             <hr>
-            <h2><?php esc_html_e( 'Uninstall & Data Cleanup', 'your-loan-ledger' ); ?></h2>
-            <p><?php esc_html_e( 'Normal uninstall preserves your ledger. Enable deletion only when you intentionally want uninstall to remove the plugin database.', 'your-loan-ledger' ); ?></p>
+            <h2><?php esc_html_e( 'Uninstall & Data Cleanup', 'kuloan-ledger' ); ?></h2>
+            <p><?php esc_html_e( 'Normal uninstall preserves your ledger. Enable deletion only when you intentionally want uninstall to remove the plugin database.', 'kuloan-ledger' ); ?></p>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <input type="hidden" name="action" value="lendsure_save_cleanup_policy">
                 <?php wp_nonce_field( 'lendsure_save_cleanup_policy' ); ?>
-                <label><input type="checkbox" name="delete_on_uninstall" value="1" <?php checked( get_option( 'lendsure_delete_data_on_uninstall', '0' ), '1' ); ?>> <?php esc_html_e( 'Delete Your Loan Ledger database data when the plugin is uninstalled', 'your-loan-ledger' ); ?></label>
-                <?php submit_button( __( 'Save Uninstall Policy', 'your-loan-ledger' ), 'secondary', 'submit', false ); ?>
+                <label><input type="checkbox" name="delete_on_uninstall" value="1" <?php checked( get_option( 'lendsure_delete_data_on_uninstall', '0' ), '1' ); ?>> <?php esc_html_e( 'Delete KuLoan Ledger database data when the plugin is uninstalled', 'kuloan-ledger' ); ?></label>
+                <?php submit_button( __( 'Save Uninstall Policy', 'kuloan-ledger' ), 'secondary', 'submit', false ); ?>
             </form>
-            <h3><?php esc_html_e( 'Danger Zone: Erase All Data & Deactivate', 'your-loan-ledger' ); ?></h3>
-            <p><?php esc_html_e( 'Download a backup first. This immediately removes plugin tables/settings and deactivates the plugin.', 'your-loan-ledger' ); ?></p>
+            <h3><?php esc_html_e( 'Danger Zone: Erase All Data & Deactivate', 'kuloan-ledger' ); ?></h3>
+            <p><?php esc_html_e( 'Download a backup first. This immediately removes plugin tables/settings and deactivates the plugin.', 'kuloan-ledger' ); ?></p>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <input type="hidden" name="action" value="lendsure_erase_all_data">
                 <?php wp_nonce_field( 'lendsure_erase_all_data' ); ?>
-                <p><label><?php esc_html_e( 'Type ERASE:', 'your-loan-ledger' ); ?> <input required type="text" name="erase_confirmation" autocomplete="off"></label></p>
-                <p><label><input type="checkbox" name="delete_media" value="1"> <?php esc_html_e( 'Also delete referenced company logo and acknowledgement media', 'your-loan-ledger' ); ?></label></p>
-                <button class="button button-link-delete" type="submit"><?php esc_html_e( 'Erase All Data & Deactivate', 'your-loan-ledger' ); ?></button>
+                <p><label><?php esc_html_e( 'Type ERASE:', 'kuloan-ledger' ); ?> <input required type="text" name="erase_confirmation" autocomplete="off"></label></p>
+                <p><label><input type="checkbox" name="delete_media" value="1"> <?php esc_html_e( 'Also delete referenced company logo and acknowledgement media', 'kuloan-ledger' ); ?></label></p>
+                <button class="button button-link-delete" type="submit"><?php esc_html_e( 'Erase All Data & Deactivate', 'kuloan-ledger' ); ?></button>
             </form>
         </div>
         <?php

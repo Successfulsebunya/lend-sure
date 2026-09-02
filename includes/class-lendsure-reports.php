@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Management reporting for Your Loan Ledger.
+ * Management reporting for KuLoan Ledger.
  */
 class LendSure_Reports {
     private static $instance = null;
@@ -24,8 +24,8 @@ class LendSure_Reports {
     public function menu() {
         add_submenu_page(
             'lendsure',
-            __( 'Reports', 'your-loan-ledger' ),
-            __( 'Reports', 'your-loan-ledger' ),
+            __( 'Reports', 'kuloan-ledger' ),
+            __( 'Reports', 'kuloan-ledger' ),
             'manage_options',
             'lendsure-reports',
             array( $this, 'render_page' )
@@ -231,15 +231,15 @@ class LendSure_Reports {
         $report = $this->build_report( $from, $to );
         ?>
         <div class="wrap yll-report-wrap">
-            <h1><?php esc_html_e( 'Lending Performance Report', 'your-loan-ledger' ); ?></h1>
-            <p class="description"><?php esc_html_e( 'A management view for team discussion. “Lending Income” means interest plus penalties collected; it is not accounting profit because operating expenses, taxes, write-offs, and other costs are not tracked.', 'your-loan-ledger' ); ?></p>
+            <h1><?php esc_html_e( 'Lending Performance Report', 'kuloan-ledger' ); ?></h1>
+            <p class="description"><?php esc_html_e( 'A management view for team discussion. “Lending Income” means interest plus penalties collected; it is not accounting profit because operating expenses, taxes, write-offs, and other costs are not tracked.', 'kuloan-ledger' ); ?></p>
 
             <form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
                 <input type="hidden" name="page" value="lendsure-reports">
-                <label><?php esc_html_e( 'From', 'your-loan-ledger' ); ?> <input type="date" name="from" value="<?php echo esc_attr( $from ); ?>"></label>
-                <label><?php esc_html_e( 'To', 'your-loan-ledger' ); ?> <input type="date" name="to" value="<?php echo esc_attr( $to ); ?>"></label>
-                <button class="button button-primary" type="submit"><?php esc_html_e( 'Generate Report', 'your-loan-ledger' ); ?></button>
-                <button class="button js-yll-print" type="button"><?php esc_html_e( 'Print / Save PDF', 'your-loan-ledger' ); ?></button>
+                <label><?php esc_html_e( 'From', 'kuloan-ledger' ); ?> <input type="date" name="from" value="<?php echo esc_attr( $from ); ?>"></label>
+                <label><?php esc_html_e( 'To', 'kuloan-ledger' ); ?> <input type="date" name="to" value="<?php echo esc_attr( $to ); ?>"></label>
+                <button class="button button-primary" type="submit"><?php esc_html_e( 'Generate Report', 'kuloan-ledger' ); ?></button>
+                <button class="button js-yll-print" type="button"><?php esc_html_e( 'Print / Save PDF', 'kuloan-ledger' ); ?></button>
             </form>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -247,53 +247,53 @@ class LendSure_Reports {
                 <input type="hidden" name="from" value="<?php echo esc_attr( $from ); ?>">
                 <input type="hidden" name="to" value="<?php echo esc_attr( $to ); ?>">
                 <?php wp_nonce_field( 'lendsure_export_business_report' ); ?>
-                <?php submit_button( __( 'Export CSV', 'your-loan-ledger' ), 'secondary', 'submit', false ); ?>
+                <?php submit_button( __( 'Export CSV', 'kuloan-ledger' ), 'secondary', 'submit', false ); ?>
             </form>
 
             <?php /* translators: 1: report start date, 2: report end date. */ ?>
-            <h2><?php echo esc_html( sprintf( __( 'Reporting Period: %1$s to %2$s', 'your-loan-ledger' ), $from, $to ) ); ?></h2>
+            <h2><?php echo esc_html( sprintf( __( 'Reporting Period: %1$s to %2$s', 'kuloan-ledger' ), $from, $to ) ); ?></h2>
 
-            <h2><?php esc_html_e( 'Executive Summary', 'your-loan-ledger' ); ?></h2>
+            <h2><?php esc_html_e( 'Executive Summary', 'kuloan-ledger' ); ?></h2>
             <table class="widefat striped"><tbody>
-                <tr><th><?php esc_html_e( 'Loans issued', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $report['loans_issued'] ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Borrowers served', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $report['borrowers_served'] ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Principal issued', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['principal_issued'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Average loan size', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['average_loan_size'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Total cash collected', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['total_collected'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Principal collected', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['principal_collected'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Interest collected', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['interest_collected'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Penalties collected', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['penalties_collected'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Lending Income', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['lending_income'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Principal collected vs principal issued', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( number_format_i18n( $report['principal_recovery'], 1 ) . '%' ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Loans issued', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $report['loans_issued'] ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Borrowers served', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $report['borrowers_served'] ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Principal issued', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['principal_issued'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Average loan size', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['average_loan_size'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Total cash collected', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['total_collected'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Principal collected', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['principal_collected'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Interest collected', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['interest_collected'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Penalties collected', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['penalties_collected'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Lending Income', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['lending_income'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Principal collected vs principal issued', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( number_format_i18n( $report['principal_recovery'], 1 ) . '%' ); ?></td></tr>
             </tbody></table>
-            <p class="description"><?php esc_html_e( 'The principal-collected percentage can exceed 100% when the selected period includes repayments for loans issued before the period.', 'your-loan-ledger' ); ?></p>
+            <p class="description"><?php esc_html_e( 'The principal-collected percentage can exceed 100% when the selected period includes repayments for loans issued before the period.', 'kuloan-ledger' ); ?></p>
 
-            <h2><?php esc_html_e( 'Current Portfolio & Risk', 'your-loan-ledger' ); ?></h2>
+            <h2><?php esc_html_e( 'Current Portfolio & Risk', 'kuloan-ledger' ); ?></h2>
             <table class="widefat striped"><tbody>
-                <tr><th><?php esc_html_e( 'Active loans', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $report['active_loans'] ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Outstanding principal', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['outstanding_principal'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Outstanding interest', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['outstanding_interest'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Outstanding penalties', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['outstanding_penalties'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Current expected amount', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['expected_amount'] ) ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Overdue loans', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $report['overdue_loans'] ); ?></td></tr>
-                <tr><th><?php esc_html_e( 'Overdue exposure', 'your-loan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['overdue_exposure'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Active loans', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $report['active_loans'] ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Outstanding principal', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['outstanding_principal'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Outstanding interest', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['outstanding_interest'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Outstanding penalties', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['outstanding_penalties'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Current expected amount', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['expected_amount'] ) ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Overdue loans', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $report['overdue_loans'] ); ?></td></tr>
+                <tr><th><?php esc_html_e( 'Overdue exposure', 'kuloan-ledger' ); ?></th><td><?php echo esc_html( $this->money( $report['overdue_exposure'] ) ); ?></td></tr>
             </tbody></table>
             <?php /* translators: %d: configured number of grace-period days. */ ?>
-            <p class="description"><?php echo esc_html( sprintf( __( 'Overdue exposure uses the configured %d-day grace period.', 'your-loan-ledger' ), $report['grace_days'] ) ); ?></p>
+            <p class="description"><?php echo esc_html( sprintf( __( 'Overdue exposure uses the configured %d-day grace period.', 'kuloan-ledger' ), $report['grace_days'] ) ); ?></p>
 
-            <h2><?php esc_html_e( 'Monthly Performance', 'your-loan-ledger' ); ?></h2>
-            <table class="widefat striped"><thead><tr><th><?php esc_html_e( 'Month', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Loans', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Principal Issued', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Cash Collected', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Principal Collected', 'your-loan-ledger' ); ?></th><th><?php esc_html_e( 'Lending Income', 'your-loan-ledger' ); ?></th></tr></thead><tbody>
+            <h2><?php esc_html_e( 'Monthly Performance', 'kuloan-ledger' ); ?></h2>
+            <table class="widefat striped"><thead><tr><th><?php esc_html_e( 'Month', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Loans', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Principal Issued', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Cash Collected', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Principal Collected', 'kuloan-ledger' ); ?></th><th><?php esc_html_e( 'Lending Income', 'kuloan-ledger' ); ?></th></tr></thead><tbody>
             <?php foreach ( $report['months'] as $month ) : ?>
                 <tr><td><?php echo esc_html( $month['month'] ); ?></td><td><?php echo esc_html( $month['loans_count'] ); ?></td><td><?php echo esc_html( $this->money( $month['principal_issued'] ) ); ?></td><td><?php echo esc_html( $this->money( $month['total_collected'] ) ); ?></td><td><?php echo esc_html( $this->money( $month['principal_collected'] ) ); ?></td><td><?php echo esc_html( $this->money( $month['lending_income'] ) ); ?></td></tr>
             <?php endforeach; ?>
             </tbody></table>
 
-            <h2><?php esc_html_e( 'Management Discussion Notes', 'your-loan-ledger' ); ?></h2>
+            <h2><?php esc_html_e( 'Management Discussion Notes', 'kuloan-ledger' ); ?></h2>
             <ul>
-                <li><?php esc_html_e( 'Compare monthly loan issuance with collection performance.', 'your-loan-ledger' ); ?></li>
-                <li><?php esc_html_e( 'Review overdue exposure and identify loans needing follow-up.', 'your-loan-ledger' ); ?></li>
-                <li><?php esc_html_e( 'Discuss whether lending volume is growing, stable, or declining.', 'your-loan-ledger' ); ?></li>
-                <li><?php esc_html_e( 'Use Lending Income as a collection indicator, not as net company profit.', 'your-loan-ledger' ); ?></li>
+                <li><?php esc_html_e( 'Compare monthly loan issuance with collection performance.', 'kuloan-ledger' ); ?></li>
+                <li><?php esc_html_e( 'Review overdue exposure and identify loans needing follow-up.', 'kuloan-ledger' ); ?></li>
+                <li><?php esc_html_e( 'Discuss whether lending volume is growing, stable, or declining.', 'kuloan-ledger' ); ?></li>
+                <li><?php esc_html_e( 'Use Lending Income as a collection indicator, not as net company profit.', 'kuloan-ledger' ); ?></li>
             </ul>
         </div>
         <?php
@@ -301,14 +301,14 @@ class LendSure_Reports {
 
     public function export_csv() {
         if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You do not have permission to perform this action.', 'your-loan-ledger' ) );
+            wp_die( esc_html__( 'You do not have permission to perform this action.', 'kuloan-ledger' ) );
         }
         check_admin_referer( 'lendsure_export_business_report' );
 
         $from = isset( $_POST['from'] ) ? sanitize_text_field( wp_unslash( $_POST['from'] ) ) : '';
         $to   = isset( $_POST['to'] ) ? sanitize_text_field( wp_unslash( $_POST['to'] ) ) : '';
         if ( ! $this->valid_date( $from ) || ! $this->valid_date( $to ) ) {
-            wp_die( esc_html__( 'Invalid report date range.', 'your-loan-ledger' ) );
+            wp_die( esc_html__( 'Invalid report date range.', 'kuloan-ledger' ) );
         }
         if ( $from > $to ) {
             $tmp  = $from;
@@ -317,7 +317,7 @@ class LendSure_Reports {
         }
 
         $report   = $this->build_report( $from, $to );
-        $filename = 'your-loan-ledger-report-' . $from . '-to-' . $to . '.csv';
+        $filename = 'kuloan-ledger-report-' . $from . '-to-' . $to . '.csv';
         nocache_headers();
         header( 'Content-Type: text/csv; charset=utf-8' );
         header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
