@@ -1,0 +1,37 @@
+name: Package KuLoan v1.4.1 final
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Validate PHP syntax
+        run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+      - name: Build packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kuloan-final
+          mkdir -p /tmp/kuloan-final/install/kuloan-ledger /tmp/kuloan-final/source/kuloan-ledger
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' ./ /tmp/kuloan-final/install/kuloan-ledger/
+          rsync -a --exclude='.git' --exclude='.github' ./ /tmp/kuloan-final/source/kuloan-ledger/
+          (cd /tmp/kuloan-final/install && zip -qr /tmp/kuloan-final/kuloan-ledger-1.4.1-final.zip kuloan-ledger)
+          (cd /tmp/kuloan-final/source && zip -qr /tmp/kuloan-final/kuloan-ledger-1.4.1-final-github.zip kuloan-ledger)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kuloan-ledger-v1.4.1-final-packages
+          path: |
+            /tmp/kuloan-final/kuloan-ledger-1.4.1-final.zip
+            /tmp/kuloan-final/kuloan-ledger-1.4.1-final-github.zip
+          retention-days: 7
