@@ -1,0 +1,45 @@
+name: Fix final Plugin Check findings
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Fix remaining Plugin Check warnings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('includes/class-lendsure-management.php')
+          text = p.read_text()
+          old = """        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.\n        $file = $_FILES['backup_file']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Passed to WordPress upload handling after nonce/capability checks.\n"""
+          new = """        $file = $_FILES['backup_file']; // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- restore_backup() verifies capability and nonce via guard() before this helper is called; file is then passed to WordPress upload handling.\n"""
+          if old not in text:
+              raise SystemExit('Expected backup_file block not found')
+          text = text.replace(old, new)
+          old2 = "// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Explicit administrator-requested removal of plugin-owned table."
+          new2 = "// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Explicit administrator-requested removal of plugin-owned table; caching is not applicable to a destructive schema operation."
+          if old2 not in text:
+              raise SystemExit('Expected DROP TABLE annotation not found')
+          text = text.replace(old2, new2)
+          p.write_text(text)
+          PY
+          php -l includes/class-lendsure-management.php
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add includes/class-lendsure-management.php
+          git commit -m "Fix final Plugin Check warnings"
+          git push origin main
