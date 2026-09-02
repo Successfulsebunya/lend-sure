@@ -1,0 +1,47 @@
+name: Package KuLoan v1.4.1
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_SHA: 8fc5ce55af91276b70fdfc2b7e2a9c7c78add6c0
+    steps:
+      - name: Check out merged KuLoan v1.4.1 commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_SHA }}
+
+      - name: Build WordPress install ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kuloan-package
+          mkdir -p /tmp/kuloan-package/install/kuloan-ledger
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' ./ /tmp/kuloan-package/install/kuloan-ledger/
+          ( cd /tmp/kuloan-package/install && zip -qr /tmp/kuloan-package/kuloan-ledger-1.4.1.zip kuloan-ledger )
+
+      - name: Build GitHub source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kuloan-package/source/kuloan-ledger
+          rsync -a --exclude='.git' --exclude='.github/workflows/package-kuloan-v1.4.1.yml' ./ /tmp/kuloan-package/source/kuloan-ledger/
+          ( cd /tmp/kuloan-package/source && zip -qr /tmp/kuloan-package/kuloan-ledger-1.4.1-github.zip kuloan-ledger )
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuloan-ledger-v1.4.1-packages
+          path: |
+            /tmp/kuloan-package/kuloan-ledger-1.4.1.zip
+            /tmp/kuloan-package/kuloan-ledger-1.4.1-github.zip
+          retention-days: 7
