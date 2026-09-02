@@ -1,0 +1,54 @@
+name: Publish KuLoan v1.4.1
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_SHA: 08e4c3a9474ed7294982f6396921a49e2eece3d2
+      TAG: v1.4.1
+    steps:
+      - name: Check out final v1.4.1 commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_SHA }}
+          fetch-depth: 0
+
+      - name: Validate PHP syntax
+        run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+
+      - name: Build install ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kuloan-release
+          mkdir -p /tmp/kuloan-release/kuloan-ledger
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' ./ /tmp/kuloan-release/kuloan-ledger/
+          ( cd /tmp/kuloan-release && zip -qr kuloan-ledger-1.4.1.zip kuloan-ledger )
+
+      - name: Create tag and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            git tag "$TAG" "$RELEASE_SHA"
+            git push origin "$TAG"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" /tmp/kuloan-release/kuloan-ledger-1.4.1.zip --clobber
+          else
+            gh release create "$TAG" /tmp/kuloan-release/kuloan-ledger-1.4.1.zip \
+              --title "KuLoan Ledger v1.4.1" \
+              --target "$RELEASE_SHA" \
+              --notes $'Branding and WordPress.org compliance release.\n\n- Renames the public plugin identity to KuLoan Ledger.\n- Uses the kuloan-ledger text domain and requested WordPress.org permalink.\n- Includes Plugin Check fixes for nonce-analysis, direct database query annotations, and prepared SQL.\n- Preserves existing LendSure_* classes, lendsure_* tables/options/actions, and stored data for backward compatibility.\n- No lending calculation or database schema changes.'
+          fi
