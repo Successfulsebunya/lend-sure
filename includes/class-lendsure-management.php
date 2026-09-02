@@ -211,8 +211,7 @@ class LendSure_Management {
             return new WP_Error( 'missing_backup', __( 'Choose a backup JSON file.', 'kuloan-ledger' ) );
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
-        $file = $_FILES['backup_file']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Passed to WordPress upload handling after nonce/capability checks.
+        $file = $_FILES['backup_file']; // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- restore_backup() verifies capability and nonce via guard() before this helper is called; file is then passed to WordPress upload handling.
         if ( ! empty( $file['error'] ) ) {
             return new WP_Error( 'upload_error', __( 'The backup file could not be uploaded.', 'kuloan-ledger' ) );
         }
@@ -619,7 +618,7 @@ class LendSure_Management {
 
         foreach ( self::table_names() as $name ) {
             $table = LendSure_DB::table( $name );
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Explicit administrator-requested removal of plugin-owned table.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Explicit administrator-requested removal of plugin-owned table; caching is not applicable to a destructive schema operation.
             $wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table ) );
         }
         foreach ( self::option_keys() as $key ) {
