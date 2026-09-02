@@ -206,10 +206,12 @@ class LendSure_Management {
     }
 
     private function decode_uploaded_backup() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         if ( empty( $_FILES['backup_file'] ) || ! is_array( $_FILES['backup_file'] ) ) {
             return new WP_Error( 'missing_backup', __( 'Choose a backup JSON file.', 'kuloan-ledger' ) );
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $file = $_FILES['backup_file']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Passed to WordPress upload handling after nonce/capability checks.
         if ( ! empty( $file['error'] ) ) {
             return new WP_Error( 'upload_error', __( 'The backup file could not be uploaded.', 'kuloan-ledger' ) );
@@ -299,6 +301,7 @@ class LendSure_Management {
 
     public function restore_backup() {
         $this->guard( 'lendsure_restore_backup' );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $confirmation = isset( $_POST['restore_confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['restore_confirmation'] ) ) : '';
         if ( 'RESTORE' !== $confirmation ) {
             $this->redirect_tools( __( 'Restore cancelled: type RESTORE exactly to confirm.', 'kuloan-ledger' ), 'error' );
@@ -330,12 +333,12 @@ class LendSure_Management {
             unset( $loan );
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Transaction protects administrator-requested ledger replacement.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction protects administrator-requested ledger replacement.
         $wpdb->query( 'START TRANSACTION' );
         try {
             foreach ( array_reverse( self::table_names() ) as $name ) {
                 $table = LendSure_DB::table( $name );
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Explicit administrator-confirmed restore of plugin-owned tables.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Explicit administrator-confirmed restore of plugin-owned tables.
                 $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $table ) );
             }
             foreach ( self::table_names() as $name ) {
@@ -348,16 +351,16 @@ class LendSure_Management {
                     if ( ! $row ) {
                         continue;
                     }
-                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Restoring validated fields into plugin-owned tables.
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Restoring validated fields into plugin-owned tables.
                     if ( false === $wpdb->insert( $table, $row ) ) {
                         throw new RuntimeException( 'Database restore failed.' );
                     }
                 }
             }
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Completes administrator-requested restore transaction.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Completes administrator-requested restore transaction.
             $wpdb->query( 'COMMIT' );
         } catch ( Throwable $e ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Reverts partial restore.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reverts partial restore.
             $wpdb->query( 'ROLLBACK' );
             $this->redirect_tools( __( 'Restore failed and database changes were rolled back.', 'kuloan-ledger' ), 'error' );
         }
@@ -407,18 +410,29 @@ class LendSure_Management {
             return false;
         }
         $transactions = LendSure_DB::table( 'transactions' );
-        $types = array( 'payment_received', 'penalty_applied', 'interest_charged', 'capitalized', 'extension', 'payment_voided' );
-        $placeholders = implode( ',', array_fill( 0, count( $types ), '%s' ) );
-        $sql = "SELECT COUNT(*) FROM %i WHERE loan_id = %d AND created_at > %s AND type IN ({$placeholders})";
-        $args = array_merge( array( $transactions, absint( $payment->loan_id ), $payment->created_at ), $types );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Placeholder list is generated internally; all values are prepared.
-        $later = (int) $wpdb->get_var( $wpdb->prepare( $sql, $args ) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Integrity check before administrator payment reversal.
+        $later = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT COUNT(*) FROM %i WHERE loan_id = %d AND created_at > %s AND type IN ( %s, %s, %s, %s, %s, %s )',
+                $transactions,
+                absint( $payment->loan_id ),
+                $payment->created_at,
+                'payment_received',
+                'penalty_applied',
+                'interest_charged',
+                'capitalized',
+                'extension',
+                'payment_voided'
+            )
+        );
         return 0 === $later;
     }
 
     public function void_payment() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $payment_id = isset( $_POST['payment_id'] ) ? absint( wp_unslash( $_POST['payment_id'] ) ) : 0;
         $this->guard( 'lendsure_void_payment_' . $payment_id );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $reason = isset( $_POST['void_reason'] ) ? sanitize_text_field( wp_unslash( $_POST['void_reason'] ) ) : '';
         if ( ! $payment_id || '' === $reason ) {
             $this->redirect_tools( __( 'A payment and reversal reason are required.', 'kuloan-ledger' ), 'error' );
@@ -463,10 +477,10 @@ class LendSure_Management {
         );
         $note = $note ? $note . "\n" . $void_note : $void_note;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Transaction keeps payment reversal atomic.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction keeps payment reversal atomic.
         $wpdb->query( 'START TRANSACTION' );
         $ok = true;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Updating plugin-owned loan balance during explicit reversal.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Updating plugin-owned loan balance during explicit reversal.
         $ok = $ok && false !== $wpdb->update(
             $loans,
             array(
@@ -480,7 +494,7 @@ class LendSure_Management {
             array( '%f', '%f', '%f', '%s', '%s' ),
             array( '%d' )
         );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Zeroing operational payment components prevents totals from double-counting a voided payment; originals remain in audit transaction metadata.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Zeroing operational payment components prevents totals from double-counting a voided payment; originals remain in audit transaction metadata.
         $ok = $ok && false !== $wpdb->update(
             $payments,
             array(
@@ -495,7 +509,7 @@ class LendSure_Management {
             array( '%d' )
         );
         $transactions = LendSure_DB::table( 'transactions' );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Writes immutable reversal audit record to plugin-owned ledger.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Writes immutable reversal audit record to plugin-owned ledger.
         $ok = $ok && false !== $wpdb->insert(
             $transactions,
             array(
@@ -510,17 +524,18 @@ class LendSure_Management {
             array( '%d', '%s', '%f', '%s', '%s', '%s', '%s' )
         );
         if ( $ok ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Completes atomic reversal.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Completes atomic reversal.
             $wpdb->query( 'COMMIT' );
             LendSure_DB::flush_cache();
             $this->redirect_tools( __( 'Payment voided and its balance allocation was restored.', 'kuloan-ledger' ) );
         }
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Reverts failed reversal.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Reverts failed reversal.
         $wpdb->query( 'ROLLBACK' );
         $this->redirect_tools( __( 'The payment could not be voided.', 'kuloan-ledger' ), 'error' );
     }
 
     public function void_loan() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $loan_id = isset( $_POST['loan_id'] ) ? absint( wp_unslash( $_POST['loan_id'] ) ) : 0;
         $this->guard( 'lendsure_void_loan_' . $loan_id );
         if ( ! $loan_id ) {
@@ -552,8 +567,10 @@ class LendSure_Management {
     }
 
     public function delete_loan() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $loan_id = isset( $_POST['loan_id'] ) ? absint( wp_unslash( $_POST['loan_id'] ) ) : 0;
         $this->guard( 'lendsure_delete_loan_' . $loan_id );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $confirmation = isset( $_POST['delete_confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['delete_confirmation'] ) ) : '';
         if ( ! $loan_id || 'DELETE' !== $confirmation ) {
             $this->redirect_tools( __( 'Permanent deletion cancelled: type DELETE exactly.', 'kuloan-ledger' ), 'error' );
@@ -565,12 +582,13 @@ class LendSure_Management {
         }
         foreach ( array( 'reminders', 'transactions', 'payments' ) as $name ) {
             $table = LendSure_DB::table( $name );
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Explicit administrator-confirmed cascade deletion of plugin-owned records.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Explicit administrator-confirmed cascade deletion of plugin-owned records.
             $wpdb->delete( $table, array( 'loan_id' => $loan_id ), array( '%d' ) );
         }
         $loans = LendSure_DB::table( 'loans' );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Explicit administrator-confirmed permanent deletion.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Explicit administrator-confirmed permanent deletion.
         $wpdb->delete( $loans, array( 'id' => $loan_id ), array( '%d' ) );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         if ( ! empty( $_POST['delete_media'] ) && ! empty( $loan->acknowledgement_attachment_id ) ) {
             wp_delete_attachment( absint( $loan->acknowledgement_attachment_id ), true );
         }
@@ -580,6 +598,7 @@ class LendSure_Management {
 
     public function save_cleanup_policy() {
         $this->guard( 'lendsure_save_cleanup_policy' );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         update_option( 'lendsure_delete_data_on_uninstall', ! empty( $_POST['delete_on_uninstall'] ) ? '1' : '0' );
         $this->redirect_tools( __( 'Uninstall data policy saved.', 'kuloan-ledger' ) );
     }
@@ -618,10 +637,12 @@ class LendSure_Management {
 
     public function erase_all_data() {
         $this->guard( 'lendsure_erase_all_data' );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $confirmation = isset( $_POST['erase_confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['erase_confirmation'] ) ) : '';
         if ( 'ERASE' !== $confirmation ) {
             $this->redirect_tools( __( 'Data erasure cancelled: type ERASE exactly.', 'kuloan-ledger' ), 'error' );
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is protected by guard()/check_admin_referer(); record ID may be read first only to construct the nonce action.
         $delete_media = ! empty( $_POST['delete_media'] );
         self::delete_all_data( $delete_media );
         deactivate_plugins( plugin_basename( LENDSURE_FILE ) );
