@@ -1,8 +1,8 @@
-# Your Loan Ledger
+# KuLoan Ledger
 
-**Your Loan Ledger** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, acknowledgements, reminders, backups, corrections, and management reports from the WordPress dashboard.
+**KuLoan Ledger** is a lightweight WordPress loan-management plugin for tracking borrowers, loan balances, monthly interest, repayments, extensions, penalties, acknowledgements, reminders, backups, corrections, and management reports from the WordPress dashboard.
 
-- **Version:** 1.4.0
+- **Version:** 1.4.1
 - **Default interest:** 20% per month, configurable
 - **WordPress:** 6.4+
 - **PHP:** 7.4+
@@ -37,8 +37,8 @@
 
 1. Download the release ZIP.
 2. In WordPress, open **Plugins → Add New → Upload Plugin**.
-3. Upload and activate Your Loan Ledger.
-4. Open **Your Loan Ledger → Settings**.
+3. Upload and activate KuLoan Ledger.
+4. Open **KuLoan Ledger → Settings**.
 5. Configure loan defaults, company/lender acknowledgement details, and reminder settings.
 6. Add a borrower and create the first loan.
 
@@ -58,7 +58,7 @@ Payments are always allocated in this order:
 
 ## Backup, Restore & Data Cleanup
 
-Open **Your Loan Ledger → Tools**.
+Open **KuLoan Ledger → Tools**.
 
 ### Complete Backup
 
@@ -69,7 +69,7 @@ Open **Your Loan Ledger → Tools**.
 - payments;
 - transactions;
 - reminder history;
-- Your Loan Ledger settings; and
+- KuLoan Ledger settings; and
 - referenced company-logo and acknowledgement media when those files are readable.
 
 Use a complete backup before migration, restore, permanent data cleanup, or uninstall.
@@ -106,7 +106,7 @@ For genuinely invalid or test records, the Tools page provides a separately conf
 
 ## Business Reports
 
-Open **Your Loan Ledger → Reports** and choose a From/To date range.
+Open **KuLoan Ledger → Reports** and choose a From/To date range.
 
 The management report includes:
 
@@ -126,11 +126,11 @@ The management report includes:
 
 Reports can be exported to CSV or printed/saved as PDF for team discussions.
 
-**Lending Income** means interest plus penalties actually collected. It is intentionally not labelled accounting profit because Your Loan Ledger does not track operating expenses, salaries, rent, taxes, write-offs, or other business costs.
+**Lending Income** means interest plus penalties actually collected. It is intentionally not labelled accounting profit because KuLoan Ledger does not track operating expenses, salaries, rent, taxes, write-offs, or other business costs.
 
 ## Loan Acknowledgements
 
-Under **Your Loan Ledger → Settings**, configure:
+Under **KuLoan Ledger → Settings**, configure:
 
 - Company / Business Name
 - Company Logo
@@ -166,9 +166,16 @@ find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
 
 ## Legal Notice
 
-Your Loan Ledger is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
+KuLoan Ledger is an administrative record-keeping tool and does not provide legal or financial advice. Review applicable lending, interest, penalty, tax, privacy, and document-enforceability requirements before using it for formal lending activity.
 
 ## Changelog
+
+### 1.4.1
+
+- Renamed the public plugin identity to **KuLoan Ledger**.
+- Updated the text domain/permalink target to `kuloan-ledger`.
+- Preserved existing `LendSure_*` classes, `lendsure_*` tables/options/actions, and stored data.
+- No lending logic or database schema changes.
 
 ### 1.4.0
 
@@ -180,8 +187,8 @@ Your Loan Ledger is an administrative record-keeping tool and does not provide l
 
 ### 1.3.1
 
-- Renamed the public plugin identity to Your Loan Ledger for WordPress.org review compliance.
-- Changed the text domain to `your-loan-ledger` while preserving internal identifiers and stored data.
+- Renamed the public plugin identity to KuLoan Ledger for WordPress.org review compliance.
+- Changed the text domain to `kuloan-ledger` while preserving internal identifiers and stored data.
 - Corrected WordPress.org contributor metadata.
 - Moved acknowledgement styling and print behavior to WordPress-enqueued assets.
 
